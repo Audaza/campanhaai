@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
-  basePath: "/campanhaai",
+  basePath: process.env.BASE_PATH ?? "",
   images: { unoptimized: true },
 };
 
