@@ -128,11 +128,11 @@ export default function ResultadoPage() {
   const totalFiles  = plan.campaigns.reduce((s, c) =>
     s + c.adSets.reduce((ss, as) => ss + as.ads.filter(a => a.fileDataUrl || a.fileName).length, 0), 0);
 
-  const stats = [
-    { label: "Campanhas", value: plan.campaigns.length },
-    { label: "Conjuntos", value: totalAdSets },
-    { label: "Anúncios",  value: totalAds },
-    ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles }] : []),
+  const stats: Array<{ label: string; value: number; icon: string; accent?: boolean }> = [
+    { label: "Campanhas", value: plan.campaigns.length, icon: "◐" },
+    { label: "Conjuntos", value: totalAdSets,           icon: "◧" },
+    { label: "Anúncios",  value: totalAds,              icon: "◇" },
+    ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles, icon: "✦", accent: true }] : []),
   ];
 
   return (
@@ -354,15 +354,41 @@ export default function ResultadoPage() {
             {/* Stats strip */}
             <div style={{ display: "flex", borderTop: "1px solid #e4e8ef", marginTop: 22 }}>
               {stats.map((s, i) => (
-                <div key={i} className="stat-cell">
+                <div
+                  key={i}
+                  className="stat-cell"
+                  style={s.accent ? {
+                    background: "linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.01) 100%)",
+                    borderTop: "2px solid #f59e0b",
+                    marginTop: -1,
+                    position: "relative",
+                  } : undefined}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 14,
+                      color: s.accent ? "#f59e0b" : "#c5ccd6",
+                      lineHeight: 1,
+                    }}>
+                      {s.icon}
+                    </span>
+                    <p style={{
+                      fontSize: 28, fontWeight: 800,
+                      color: s.accent ? "#c77600" : "#0d1117",
+                      margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
+                      fontVariantNumeric: "tabular-nums",
+                    }}>
+                      {s.value}
+                    </p>
+                  </div>
                   <p style={{
-                    fontSize: 28, fontWeight: 800, color: "#0d1117",
-                    margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
-                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 11,
+                    color: s.accent ? "#a36300" : "#9ba8bb",
+                    margin: 0,
+                    fontWeight: s.accent ? 700 : 500,
+                    letterSpacing: s.accent ? "0.04em" : 0,
+                    textTransform: s.accent ? "uppercase" as const : undefined,
                   }}>
-                    {s.value}
-                  </p>
-                  <p style={{ fontSize: 11, color: "#9ba8bb", margin: "5px 0 0", fontWeight: 500 }}>
                     {s.label}
                   </p>
                 </div>

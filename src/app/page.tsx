@@ -81,10 +81,8 @@ function computeTimeline(startDate: string, endDate: string): TimelinePhase[] {
       actions:["Subir criativos nas plataformas","Configurar pixels e rastreamento","Ativar campanhas e conjuntos de anúncios"] },
     { phase:"Otimização",              duration:"3 dias",
       actions:["Analisar métricas iniciais de entrega","Ajustar lances e orçamentos por conjunto","Identificar criativos com melhor desempenho"] },
-    { phase:"Escala",                  duration:"10–15 dias",
+    { phase:"Escala",                  duration:"7 dias",
       actions:["Aumentar orçamento nos conjuntos vencedores","Pausar anúncios com baixo desempenho","Testar variações de copy e criativo"] },
-    { phase:"Análise de Desempenho",   duration:"30 dias",
-      actions:["Analisar custo por resultado, ROAS e frequência de exibição","Relatório detalhado de resultados por plataforma","Identificar públicos e criativos mais rentáveis"] },
     { phase:"Análise Final",           duration:"Escala ou Desativar",
       actions:["Avaliar performance geral da campanha","Decidir quais conjuntos escalar ou desativar","Documentar aprendizados para próximas campanhas"] },
   ];
