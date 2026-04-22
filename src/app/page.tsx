@@ -444,6 +444,25 @@ REGRAS:
                   <Field label="Nome do cliente">
                     <input className="ap-input" placeholder="Ex: Clínica Saúde+"
                       value={form.clientName} onChange={e=>set("clientName",e.target.value)}/>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
+                      <span style={{ fontSize:11, color:"var(--muted)", alignSelf:"center", marginRight:4 }}>
+                        Atalhos:
+                      </span>
+                      {["Tadeu","H. São Judas","Unimagem"].map(name => (
+                        <button key={name} type="button"
+                          onClick={()=>set("clientName",name)}
+                          style={{
+                            fontSize:11, fontWeight:500,
+                            padding:"4px 10px", borderRadius:999,
+                            border: form.clientName===name ? "1px solid var(--primary)" : "1px solid var(--border-input)",
+                            background: form.clientName===name ? "var(--primary-dim)" : "var(--surface-2)",
+                            color: form.clientName===name ? "var(--primary)" : "var(--text-sub)",
+                            cursor:"pointer", transition:"all 0.15s ease",
+                          }}>
+                          {name}
+                        </button>
+                      ))}
+                    </div>
                   </Field>
 
                   <Field label="Produto ou serviço">
