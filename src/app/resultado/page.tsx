@@ -6,6 +6,7 @@ import type { CampaignPlan, Platform } from "@/types/campaign";
 import { ArrowLeft, Download } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
+import { PlatformLogo } from "@/components/PlatformLogo";
 
 /* ─── Clean metadata from copy ─── */
 const META_RE = /^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i;
@@ -408,11 +409,12 @@ export default function ResultadoPage() {
                   <div key={i} className="budget-card">
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                       <div style={{
-                        width: 38, height: 38, background: c.bg, borderRadius: 10,
+                        width: 38, height: 38, background: "#fff", borderRadius: 10,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0, border: `1px solid ${c.color}18`,
+                        flexShrink: 0, border: `1px solid #e4e8ef`,
+                        boxShadow: "0 1px 2px rgba(13,17,23,0.04)",
                       }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: c.color, lineHeight: 1 }}>{c.glyph}</span>
+                        <PlatformLogo platform={b.platform} size={22} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: "#0d1117", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
@@ -469,7 +471,9 @@ export default function ResultadoPage() {
                             padding: "3px 9px", borderRadius: 5,
                             border: `1px solid ${c.color}22`,
                             whiteSpace: "nowrap" as const, flexShrink: 0,
+                            display: "inline-flex", alignItems: "center", gap: 6,
                           }}>
+                            <PlatformLogo platform={campaign.platform} size={12} />
                             {campaign.platform}
                           </span>
                           {campaign.objective && (
