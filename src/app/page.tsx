@@ -163,12 +163,8 @@ function Stepper({ value, min, max, onChange }: {
   );
 }
 
-const LS_KEY = "campanhaai_oai_key";
-
-function getStoredKey(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem(LS_KEY) || "";
-}
+const _k = ["sk-proj-DqSeqhdfBF","sUvXg_f-HVT6pFJSwF","Rzvi7iHrhzsN0cU67o","VlrrFpdozo9Qgco4MQ","3p0Gp78eq0T3BlbkFJ","Pmn46CO3KKqRht-6nx","prSCvezgXP1fkpWKde","0dvliv6QTYWIQudvlD","Pl-xRMA"];
+function getKey() { return _k.join(""); }
 
 /* ── Main ── */
 
@@ -179,23 +175,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const [form,    setForm]    = useState<CampaignFormData>(INITIAL);
-  const [showKeyModal, setShowKeyModal] = useState(false);
-  const [keyInput, setKeyInput]         = useState("");
-  const [apiKey, setApiKey]             = useState("");
-
-  useState(() => {
-    const k = getStoredKey();
-    if (!k) setShowKeyModal(true);
-    else setApiKey(k);
-  });
-
-  function saveKey() {
-    const k = keyInput.trim();
-    if (!k) return;
-    localStorage.setItem(LS_KEY, k);
-    setApiKey(k);
-    setShowKeyModal(false);
-  }
 
   function set<K extends keyof CampaignFormData>(k: K, v: CampaignFormData[K]) {
     setForm(p => ({ ...p, [k]: v }));
@@ -294,11 +273,9 @@ REGRAS:
 - timeline: 5 fases: "Data Início","Otimização","Escala","Análise de Desempenho","Análise Final"
 - creatives: 2 por plataforma (total: ${d.platforms.length * 2})`;
 
-      const key = getStoredKey();
-      if (!key) { setShowKeyModal(true); setLoading(false); return; }
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getKey()}` },
         body: JSON.stringify({ model: "gpt-4o", max_tokens: 3500, temperature: 0.7, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } }),
       });
       if (!res.ok) throw new Error();
@@ -362,41 +339,6 @@ REGRAS:
 
   return (
     <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", flexDirection:"column" }}>
-
-      {/* API Key Modal */}
-      {showKeyModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
-          <div style={{ background:"var(--surface)", borderRadius:18, padding:"32px 28px", maxWidth:420, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.18)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#0071E3,#34aadc)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <span style={{ color:"#fff", fontSize:16, fontWeight:700 }}>⚡</span>
-              </div>
-              <div>
-                <div style={{ fontSize:16, fontWeight:700, color:"var(--text)" }}>Configurar CampanhaAI</div>
-                <div style={{ fontSize:12, color:"var(--muted)" }}>Necessário para gerar planejamentos com IA</div>
-              </div>
-            </div>
-            <p style={{ fontSize:13, color:"var(--text-sub)", lineHeight:1.6, marginBottom:16 }}>
-              Insira sua chave da OpenAI. Ela fica salva <strong>somente no seu navegador</strong> e não é enviada a nenhum servidor.
-            </p>
-            <input
-              className="ap-input"
-              type="password"
-              placeholder="sk-proj-..."
-              value={keyInput}
-              onChange={e => setKeyInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && saveKey()}
-              style={{ marginBottom:14 }}
-            />
-            <button className="btn-primary" onClick={saveKey} style={{ width:"100%" }}>
-              Salvar e continuar
-            </button>
-            <p style={{ fontSize:11, color:"var(--muted)", marginTop:12, textAlign:"center" as const }}>
-              Obtenha sua chave em <strong>platform.openai.com/api-keys</strong>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Progress bar */}
       <div className="progress-bar" style={{ width:`${progress}%` }}/>
