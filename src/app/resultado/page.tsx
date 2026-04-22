@@ -8,11 +8,20 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 
 /* ─── Clean metadata from copy ─── */
+const META_RE = /^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i;
 function cleanCopy(text: string): string {
   if (!text) return "";
-  return text
-    .replace(/^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i, "")
-    .trim();
+  return text.replace(META_RE, "").trim();
+}
+function extractPostDate(text: string): string | null {
+  if (!text) return null;
+  const m = text.match(/\bon\s+([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s*:/i);
+  if (!m) return null;
+  const d = new Date(m[1]);
+  if (isNaN(d.getTime())) return null;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
 /* ─── Platform config ─── */
@@ -552,16 +561,32 @@ export default function ResultadoPage() {
                                       </div>
                                     )}
                                     {ad.copy && (
-                                      <p style={{
-                                        flex: "1 1 200px",
-                                        fontSize: 13,
-                                        color: "#5a6478",
-                                        lineHeight: 1.72,
-                                        margin: 0,
-                                        whiteSpace: "pre-wrap" as const,
-                                      }}>
-                                        {cleanCopy(ad.copy)}
-                                      </p>
+                                      <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                        <p style={{
+                                          fontSize: 13,
+                                          color: "#5a6478",
+                                          lineHeight: 1.72,
+                                          margin: 0,
+                                          whiteSpace: "pre-wrap" as const,
+                                        }}>
+                                          {cleanCopy(ad.copy)}
+                                        </p>
+                                        {extractPostDate(ad.copy) && (
+                                          <span style={{
+                                            alignSelf: "flex-start",
+                                            fontSize: 11,
+                                            fontWeight: 500,
+                                            color: "#9ba8bb",
+                                            background: "#f6f8fa",
+                                            border: "1px solid #e4e8ef",
+                                            padding: "3px 9px",
+                                            borderRadius: 999,
+                                            letterSpacing: "0.01em",
+                                          }}>
+                                            📅 Publicado em {extractPostDate(ad.copy)}
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 )}

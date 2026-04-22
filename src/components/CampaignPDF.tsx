@@ -53,6 +53,16 @@ function cleanCopy(text: string): string {
     .replace(/^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i, "")
     .trim();
 }
+function extractPostDate(text: string): string | null {
+  if (!text) return null;
+  const m = text.match(/\bon\s+([A-Za-z]+\s+\d{1,2},?\s+\d{4})\s*:/i);
+  if (!m) return null;
+  const d = new Date(m[1]);
+  if (isNaN(d.getTime())) return null;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
 
 /* ═══════════════════════════════════════════════════════
    COMPONENTES COMPARTILHADOS
@@ -457,23 +467,35 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                               <Text style={{ fontSize: 9.5, fontFamily: "Helvetica-Bold", color: SUB }}>{ad.name}</Text>
                             </View>
 
-                            {/* Imagem (47%) + copy */}
+                            {/* Imagem (47%) + copy + data do post */}
                             {ad.fileDataUrl && ad.fileType === "image" ? (
                               <View style={{ flexDirection: "row", gap: 10 }}>
                                 <Image src={ad.fileDataUrl} style={{ width: "47%", borderRadius: 6 }} />
                                 {ad.copy ? (
-                                  <View style={{ flex: 1 }}>
+                                  <View style={{ flex: 1, flexDirection: "column", gap: 5 }}>
                                     <Text style={{ fontSize: 8.5, color: SUB, lineHeight: 1.65 }}>
                                       {cleanCopy(ad.copy)}
                                     </Text>
+                                    {extractPostDate(ad.copy) ? (
+                                      <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 2 }}>
+                                        Publicado em {extractPostDate(ad.copy)}
+                                      </Text>
+                                    ) : null}
                                   </View>
                                 ) : null}
                               </View>
                             ) : (
                               ad.copy ? (
-                                <Text style={{ fontSize: 9, color: SUB, lineHeight: 1.65 }}>
-                                  {cleanCopy(ad.copy)}
-                                </Text>
+                                <View style={{ flexDirection: "column", gap: 5 }}>
+                                  <Text style={{ fontSize: 9, color: SUB, lineHeight: 1.65 }}>
+                                    {cleanCopy(ad.copy)}
+                                  </Text>
+                                  {extractPostDate(ad.copy) ? (
+                                    <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 2 }}>
+                                      Publicado em {extractPostDate(ad.copy)}
+                                    </Text>
+                                  ) : null}
+                                </View>
                               ) : null
                             )}
 
