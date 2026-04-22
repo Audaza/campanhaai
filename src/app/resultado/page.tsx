@@ -8,6 +8,20 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
 
+/* Facebook + Instagram = Meta — mostra os 2 ícones juntos quando ambos estão na campanha */
+function platformsToDisplay(platform: string, all: readonly string[]): string[] {
+  const isMeta = platform === "Facebook" || platform === "Instagram";
+  const bothMeta = all.includes("Facebook") && all.includes("Instagram");
+  if (isMeta && bothMeta) return ["Facebook", "Instagram"];
+  return [platform];
+}
+function platformLabel(platform: string, all: readonly string[]): string {
+  const isMeta = platform === "Facebook" || platform === "Instagram";
+  const bothMeta = all.includes("Facebook") && all.includes("Instagram");
+  if (isMeta && bothMeta) return "Meta (Facebook + Instagram)";
+  return platform;
+}
+
 /* ─── Clean metadata from copy ─── */
 const META_RE = /^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i;
 function cleanCopy(text: string): string {
@@ -473,8 +487,12 @@ export default function ResultadoPage() {
                             whiteSpace: "nowrap" as const, flexShrink: 0,
                             display: "inline-flex", alignItems: "center", gap: 6,
                           }}>
-                            <PlatformLogo platform={campaign.platform} size={12} />
-                            {campaign.platform}
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+                              {platformsToDisplay(campaign.platform, plan.overview.platforms).map(plt => (
+                                <PlatformLogo key={plt} platform={plt} size={12} />
+                              ))}
+                            </span>
+                            {platformLabel(campaign.platform, plan.overview.platforms)}
                           </span>
                           {campaign.objective && (
                             <span style={{ fontSize: 12, color: "#9ba8bb" }}>{campaign.objective}</span>

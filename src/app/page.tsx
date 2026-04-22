@@ -179,12 +179,20 @@ export default function Home() {
     setForm(p => ({ ...p, [k]: v }));
   }
   function togglePlatform(p: Platform) {
-    setForm(prev => ({
-      ...prev,
-      platforms: prev.platforms.includes(p)
-        ? prev.platforms.filter(x => x !== p)
-        : [...prev.platforms, p],
-    }));
+    const META: Platform[] = ["Facebook", "Instagram"];
+    const isMeta = META.includes(p);
+    setForm(prev => {
+      const already = prev.platforms.includes(p);
+      if (already) {
+        return { ...prev, platforms: prev.platforms.filter(x => x !== p) };
+      }
+      if (isMeta) {
+        // Facebook/Instagram podem coexistir, mas não com Google/TikTok/YouTube
+        return { ...prev, platforms: [...prev.platforms.filter(x => META.includes(x)), p] };
+      }
+      // Google Ads / TikTok / YouTube → individual (substitui qualquer outra)
+      return { ...prev, platforms: [p] };
+    });
   }
 
   function next() {
