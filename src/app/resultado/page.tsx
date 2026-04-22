@@ -530,20 +530,40 @@ export default function ResultadoPage() {
                                   {ad.copy && <CopyBtn text={cleanCopy(ad.copy)} />}
                                 </div>
 
-                                {/* Image full-width + copy below */}
-                                {ad.fileDataUrl && ad.fileType === "image" && (
-                                  <div style={{ marginBottom: ad.copy ? 10 : 0 }}>
-                                    <img
-                                      src={ad.fileDataUrl}
-                                      alt={ad.fileName ?? ad.name}
-                                      style={{ maxWidth: "100%", width: "auto", height: "auto", borderRadius: 8, display: "block", border: "1px solid #e4e8ef" }}
-                                    />
+                                {/* Image (50%) ao lado da copy */}
+                                {((ad.fileDataUrl && ad.fileType === "image") || ad.copy) && (
+                                  <div style={{
+                                    display: "flex",
+                                    gap: 14,
+                                    alignItems: "flex-start",
+                                    flexWrap: "wrap" as const,
+                                  }}>
+                                    {ad.fileDataUrl && ad.fileType === "image" && (
+                                      <div style={{
+                                        flex: "0 1 50%",
+                                        minWidth: 140,
+                                        maxWidth: ad.copy ? "50%" : "100%",
+                                      }}>
+                                        <img
+                                          src={ad.fileDataUrl}
+                                          alt={ad.fileName ?? ad.name}
+                                          style={{ width: "100%", height: "auto", borderRadius: 8, display: "block", border: "1px solid #e4e8ef" }}
+                                        />
+                                      </div>
+                                    )}
+                                    {ad.copy && (
+                                      <p style={{
+                                        flex: "1 1 200px",
+                                        fontSize: 13,
+                                        color: "#5a6478",
+                                        lineHeight: 1.72,
+                                        margin: 0,
+                                        whiteSpace: "pre-wrap" as const,
+                                      }}>
+                                        {cleanCopy(ad.copy)}
+                                      </p>
+                                    )}
                                   </div>
-                                )}
-                                {ad.copy && (
-                                  <p style={{ fontSize: 13, color: "#5a6478", lineHeight: 1.72, margin: 0, whiteSpace: "pre-wrap" as const }}>
-                                    {cleanCopy(ad.copy)}
-                                  </p>
                                 )}
 
                                 {ad.fileName && ad.fileType === "video" && (
