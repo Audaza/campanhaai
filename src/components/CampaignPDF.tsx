@@ -77,7 +77,7 @@ function PageHeader({ client, section }: { client: string; section: string }) {
             <Text style={{ fontSize: 11, fontFamily: "Helvetica-Bold", color: WHITE }}>C</Text>
           </View>
           <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold", color: TEXT }}>
-            CampanhaAI
+            Campanha Tráfego | Audaza
           </Text>
         </View>
         {/* Título da seção + cliente */}
@@ -609,7 +609,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
             flexDirection: "row", justifyContent: "space-between", alignItems: "center",
           }}>
             <Text style={{ fontSize: 8.5, color: BLUE, fontFamily: "Helvetica-Bold" }}>
-              CampanhaAI
+              Campanha Tráfego | Audaza
             </Text>
             <Text style={{ fontSize: 8.5, color: MUTED }}>{today}</Text>
           </View>

@@ -242,7 +242,7 @@ export default function ResultadoPage() {
               <span style={{ fontSize: 13, color: "white", fontWeight: 800, letterSpacing: "-0.03em" }}>C</span>
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: "#0d1117", letterSpacing: "-0.025em" }}>
-              CampanhaAI
+              Campanha Tráfego | Audaza
             </span>
           </div>
 
