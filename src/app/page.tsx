@@ -1,0 +1,940 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import type {
+  CampaignFormData, Objective, Platform,
+  Gender, Duration, BudgetType, BudgetLevel, AudienceType,
+  Campaign, CampaignPlan, TimelinePhase,
+} from "@/types/campaign";
+import StructureBuilder, { makeStructure } from "@/components/StructureBuilder";
+import type { StructurePrefill } from "@/components/StructureBuilder";
+
+/* ── Constants ── */
+
+const OBJECTIVES: { value: Objective; emoji: string; label: string }[] = [
+  { value: "Conversão",               emoji: "🛒", label: "Conversão" },
+  { value: "Tráfego",                 emoji: "🔗", label: "Tráfego" },
+  { value: "Geração de Leads",        emoji: "🧲", label: "Leads" },
+  { value: "Reconhecimento de Marca", emoji: "👁️", label: "Reconhecimento" },
+  { value: "Engajamento",             emoji: "❤️", label: "Engajamento" },
+  { value: "Vendas Diretas",          emoji: "💰", label: "Vendas" },
+];
+
+const PLATFORM_GROUPS: { group: string; hint: string; platforms: { value: Platform; color: string; letter: string }[] }[] = [
+  {
+    group: "Meta",
+    hint:  "Podem ser combinadas",
+    platforms: [
+      { value: "Facebook",  color: "#1877F2", letter: "f"  },
+      { value: "Instagram", color: "#E1306C", letter: "📸" },
+    ],
+  },
+  {
+    group: "Outras plataformas",
+    hint:  "Estrutura própria para cada uma",
+    platforms: [
+      { value: "Google Ads",  color: "#EA4335", letter: "G" },
+      { value: "TikTok Ads",  color: "#010101", letter: "♪" },
+      { value: "YouTube Ads", color: "#FF0000", letter: "▶" },
+    ],
+  },
+];
+
+const DURATIONS: Duration[] = ["15 dias","30 dias","60 dias","90 dias"];
+const GENDERS: Gender[]     = ["Todos","Masculino","Feminino"];
+const STEP_LABELS            = ["Cliente","Campanha","Público","Estrutura"];
+
+const INITIAL: CampaignFormData = {
+  clientName:"", product:"", website:"",
+  campaignName:"",
+  objective:"Conversão", platforms:[],
+  budgetType:"total", budgetLevel:"adset", budget:"",
+  duration:"30 dias",
+  startDate:"", endDate:"",
+  ageMin:"18", ageMax:"45",
+  gender:"Todos", location:"",
+  audienceType:"personalizado", interests:"", remarketingSource:"",
+  structCampaigns: 1,
+  structAdSets:    2,
+  structAds:       1,
+  campaignInputs: [],
+};
+
+/* ── Timeline local computation ── */
+function computeTimeline(startDate: string, endDate: string): TimelinePhase[] {
+  const start     = new Date(startDate);
+  const end       = new Date(endDate);
+  const totalDays = Math.round((end.getTime() - start.getTime()) / 86_400_000);
+  const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day:"2-digit", month:"long", year:"numeric" });
+
+  if (totalDays < 15) {
+    return [
+      { phase:"Data Início",  duration: fmt(start),
+        actions:["Subir criativos nas plataformas","Configurar pixels e rastreamento","Ativar campanhas e conjuntos de anúncios"] },
+      { phase:"Encerramento", duration: fmt(end),
+        actions:["Pausar campanhas ativas","Exportar relatório de desempenho","Registrar aprendizados para próximas campanhas"] },
+    ];
+  }
+  return [
+    { phase:"Data Início",             duration: fmt(start),
+      actions:["Subir criativos nas plataformas","Configurar pixels e rastreamento","Ativar campanhas e conjuntos de anúncios"] },
+    { phase:"Otimização",              duration:"3 dias",
+      actions:["Analisar métricas iniciais de entrega","Ajustar lances e orçamentos por conjunto","Identificar criativos com melhor CTR"] },
+    { phase:"Escala",                  duration:"10–15 dias",
+      actions:["Aumentar budget nos conjuntos vencedores","Pausar anúncios com baixo desempenho","Testar variações de copy e criativo"] },
+    { phase:"Análise de Desempenho",   duration:"30 dias",
+      actions:["Analisar CPA, ROAS e frequência de exibição","Relatório detalhado de resultados por plataforma","Identificar públicos e criativos mais rentáveis"] },
+    { phase:"Análise Final",           duration:"Escala ou Desativar",
+      actions:["Avaliar performance geral da campanha","Decidir quais conjuntos escalar ou desativar","Documentar aprendizados para próximas campanhas"] },
+  ];
+}
+
+function daysBetween(a: string, b: string) {
+  return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86_400_000);
+}
+
+/* ── Field wrapper ── */
+function Field({ label, hint, optional, children }: {
+  label: string; hint?: string; optional?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+      <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+        <label style={{ fontSize:13, fontWeight:600, color:"var(--text-dim)", letterSpacing:"-0.01em" }}>
+          {label}
+        </label>
+        {optional && (
+          <span style={{ fontSize:11, color:"var(--muted)", fontWeight:400 }}>opcional</span>
+        )}
+      </div>
+      {hint && <p style={{ fontSize:12, color:"var(--muted)", margin:0 }}>{hint}</p>}
+      {children}
+    </div>
+  );
+}
+
+function CardTitle({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div style={{ marginBottom:22 }}>
+      <h2 style={{ fontSize:21, fontWeight:700, color:"var(--text)", margin:0, letterSpacing:"-0.025em", lineHeight:1.25 }}>
+        {title}
+      </h2>
+      {sub && <p style={{ fontSize:14, color:"var(--muted)", margin:"5px 0 0", fontWeight:400 }}>{sub}</p>}
+    </div>
+  );
+}
+
+/* ── Number Stepper ── */
+function Stepper({ value, min, max, onChange }: {
+  value: number; min: number; max: number; onChange:(v:number)=>void;
+}) {
+  return (
+    <div style={{
+      display:"inline-flex", alignItems:"center",
+      border:"1.5px solid var(--border-input)", borderRadius:10,
+      overflow:"hidden", background:"var(--surface)",
+    }}>
+      <button type="button" onClick={()=>onChange(Math.max(min,value-1))} style={{
+        width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center",
+        background:"transparent", border:"none", cursor: value<=min ? "default" : "pointer",
+        fontSize:18, color: value<=min ? "var(--muted)" : "var(--text)", fontFamily:"inherit",
+        transition:"background 0.1s",
+      }}
+        onMouseEnter={e=>{ if(value>min) (e.target as HTMLElement).style.background="var(--surface-2)"; }}
+        onMouseLeave={e=>{ (e.target as HTMLElement).style.background="transparent"; }}
+      >−</button>
+      <span style={{
+        minWidth:36, textAlign:"center" as const,
+        fontSize:15, fontWeight:700, color:"var(--text)",
+        borderLeft:"1px solid var(--border)", borderRight:"1px solid var(--border)",
+        padding:"8px 4px",
+      }}>{value}</span>
+      <button type="button" onClick={()=>onChange(Math.min(max,value+1))} style={{
+        width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center",
+        background:"transparent", border:"none", cursor: value>=max ? "default" : "pointer",
+        fontSize:18, color: value>=max ? "var(--muted)" : "var(--text)", fontFamily:"inherit",
+        transition:"background 0.1s",
+      }}
+        onMouseEnter={e=>{ if(value<max) (e.target as HTMLElement).style.background="var(--surface-2)"; }}
+        onMouseLeave={e=>{ (e.target as HTMLElement).style.background="transparent"; }}
+      >+</button>
+    </div>
+  );
+}
+
+const LS_KEY = "campanhaai_oai_key";
+
+function getStoredKey(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(LS_KEY) || "";
+}
+
+/* ── Main ── */
+
+export default function Home() {
+  const router = useRouter();
+  const [step,    setStep]    = useState(1);
+  const [dir,     setDir]     = useState<"fwd"|"bwd">("fwd");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState("");
+  const [form,    setForm]    = useState<CampaignFormData>(INITIAL);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyInput, setKeyInput]         = useState("");
+  const [apiKey, setApiKey]             = useState("");
+
+  useState(() => {
+    const k = getStoredKey();
+    if (!k) setShowKeyModal(true);
+    else setApiKey(k);
+  });
+
+  function saveKey() {
+    const k = keyInput.trim();
+    if (!k) return;
+    localStorage.setItem(LS_KEY, k);
+    setApiKey(k);
+    setShowKeyModal(false);
+  }
+
+  function set<K extends keyof CampaignFormData>(k: K, v: CampaignFormData[K]) {
+    setForm(p => ({ ...p, [k]: v }));
+  }
+  function togglePlatform(p: Platform) {
+    setForm(prev => ({
+      ...prev,
+      platforms: prev.platforms.includes(p)
+        ? prev.platforms.filter(x => x !== p)
+        : [...prev.platforms, p],
+    }));
+  }
+
+  function next() {
+    if (step === 1 && (!form.clientName.trim() || !form.product.trim())) {
+      setError("Preencha o nome do cliente e o produto."); return;
+    }
+    if (step === 2) {
+      if (!form.platforms.length) { setError("Selecione pelo menos uma plataforma."); return; }
+      if (!form.budget.trim())    { setError("Informe o valor do orçamento."); return; }
+    }
+    if (step === 3) {
+      if (!form.location.trim()) {
+        setError("Informe a localização."); return;
+      }
+      if (form.audienceType === "personalizado" && !form.interests.trim()) {
+        setError("Informe os interesses do público personalizado."); return;
+      }
+      if (form.audienceType === "remarketing" && !form.remarketingSource.trim()) {
+        setError("Informe a fonte do público de remarketing."); return;
+      }
+      setError(""); setDir("fwd");
+      setForm(p => {
+        const prefill: StructurePrefill = {
+          campaignName:      p.campaignName,
+          objective:         p.objective,
+          ageMin:            p.ageMin,
+          ageMax:            p.ageMax,
+          gender:            p.gender,
+          location:          p.location,
+          audienceType:      p.audienceType,
+          interests:         p.interests,
+          remarketingSource: p.remarketingSource,
+          budget:            p.budget,
+          budgetType:        p.budgetType,
+          budgetLevel:       p.budgetLevel,
+        };
+        return {
+          ...p,
+          campaignInputs: makeStructure(
+            p.platforms, p.structCampaigns, p.structAdSets, p.structAds, prefill
+          ),
+        };
+      });
+      setStep(s => s + 1);
+      return;
+    }
+    setError(""); setDir("fwd"); setStep(s => s + 1);
+  }
+  function back() { setError(""); setDir("bwd"); setStep(s => s - 1); }
+
+  async function submit() {
+    setError(""); setLoading(true);
+    try {
+      const d = form;
+      const budgetInfo = d.budgetType === "diario" ? `R$ ${d.budget}/dia (investimento diário)` : `R$ ${d.budget} total`;
+      const dailyValue = d.budgetType === "diario" ? `R$ ${d.budget}` : "";
+      const totalValue = d.budgetType === "total"  ? `R$ ${d.budget}` : "";
+      const prompt = `Você é um especialista sênior em tráfego pago e marketing digital.
+Crie um planejamento estratégico completo com base nas informações abaixo.
+
+CLIENTE: ${d.clientName}
+PRODUTO/SERVIÇO: ${d.product}
+SITE: ${d.website || "não informado"}
+
+CAMPANHA:
+- Objetivo: ${d.objective}
+- Plataformas: ${d.platforms.join(", ")}
+- Orçamento: ${budgetInfo}
+- Período: ${d.duration}
+
+PÚBLICO:
+- Tipo: ${d.audienceType === "aberto" ? "Público Aberto" : d.audienceType === "remarketing" ? `Remarketing — ${d.remarketingSource}` : "Personalizado"}
+- Faixa etária: ${d.ageMin}–${d.ageMax} anos
+- Gênero: ${d.gender}
+- Localização: ${d.location}
+${d.audienceType === "personalizado" ? `- Interesses: ${d.interests}` : ""}
+${d.audienceType === "remarketing" ? `- Fonte do remarketing: ${d.remarketingSource}` : ""}
+
+IMPORTANTE: Retorne SOMENTE um JSON válido, sem markdown, com estes campos:
+
+{"overview":{"clientName":"${d.clientName}","product":"${d.product}","totalBudget":"${totalValue || "calculado"}","dailyBudget":"${dailyValue}","duration":"${d.duration}","objective":"${d.objective}","platforms":${JSON.stringify(d.platforms)},"summary":"resumo estratégico 2-3 frases"},"budgetDistribution":[{"platform":"plataforma","amount":"valor em R$","percentage":numero_inteiro,"allocation":"como distribuído"}],"timeline":[{"phase":"nome","duration":"ex: Dias 1-7","actions":["ação 1","ação 2","ação 3"]}],"creatives":[{"format":"Imagem, Vídeo, Carrossel ou Stories","platform":"plataforma","headline":"título impactante","body":"texto principal","cta":"botão de ação"}],"recommendations":["rec1","rec2","rec3","rec4"]}
+
+REGRAS:
+- budgetDistribution: 1 entrada por plataforma (total: ${d.platforms.length})
+- timeline: 5 fases: "Data Início","Otimização","Escala","Análise de Desempenho","Análise Final"
+- creatives: 2 por plataforma (total: ${d.platforms.length * 2})`;
+
+      const key = getStoredKey();
+      if (!key) { setShowKeyModal(true); setLoading(false); return; }
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${key}` },
+        body: JSON.stringify({ model: "gpt-4o", max_tokens: 3500, temperature: 0.7, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } }),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const strategic = JSON.parse(data.choices[0].message.content);
+
+      const campaigns: Campaign[] = form.campaignInputs.map(ci => ({
+        name:        ci.name || `Campanha ${ci.platform}`,
+        platform:    ci.platform,
+        objective:   form.objective,
+        totalBudget: ci.totalBudget ? `R$ ${ci.totalBudget}` : "A definir",
+        adSets: ci.adSets.map(as => ({
+          name:     as.name     || "Conjunto",
+          audience: as.audience || "",
+          budget:   as.dailyBudget ? `R$ ${as.dailyBudget}` : "",
+          ads: as.ads.map(ad => ({
+            name:        ad.name   || "Anúncio",
+            format:      ad.format,
+            copy:        ad.copy,
+            fileDataUrl: ad.fileDataUrl,
+            fileType:    ad.fileType,
+            fileName:    ad.fileName,
+          })),
+        })),
+      }));
+
+      const timeline = (() => {
+        if (form.duration === "personalizado" && form.startDate && form.endDate && daysBetween(form.startDate, form.endDate) > 0) {
+          return computeTimeline(form.startDate, form.endDate);
+        }
+        const presetDays: Partial<Record<Duration, number>> = { "7 dias":7, "15 dias":15, "30 dias":30 };
+        const nDays = presetDays[form.duration];
+        if (nDays) {
+          const s = new Date();
+          const e = new Date(s.getTime() + nDays * 86_400_000);
+          return computeTimeline(s.toISOString().slice(0,10), e.toISOString().slice(0,10));
+        }
+        return strategic.timeline;
+      })();
+
+      const plan: CampaignPlan = {
+        overview:           strategic.overview,
+        campaigns,
+        budgetDistribution: strategic.budgetDistribution,
+        timeline,
+        creatives:          strategic.creatives ?? [],
+        recommendations:    strategic.recommendations,
+      };
+
+      sessionStorage.setItem("campaignPlan", JSON.stringify(plan));
+      router.push("/resultado");
+    } catch {
+      setError("Erro ao gerar o planejamento. Verifique a chave de API e tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const isWide    = step === 4;
+  const progress  = (step / STEP_LABELS.length) * 100;
+
+  return (
+    <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", flexDirection:"column" }}>
+
+      {/* API Key Modal */}
+      {showKeyModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:"var(--surface)", borderRadius:18, padding:"32px 28px", maxWidth:420, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.18)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
+              <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#0071E3,#34aadc)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <span style={{ color:"#fff", fontSize:16, fontWeight:700 }}>⚡</span>
+              </div>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:"var(--text)" }}>Configurar CampanhaAI</div>
+                <div style={{ fontSize:12, color:"var(--muted)" }}>Necessário para gerar planejamentos com IA</div>
+              </div>
+            </div>
+            <p style={{ fontSize:13, color:"var(--text-sub)", lineHeight:1.6, marginBottom:16 }}>
+              Insira sua chave da OpenAI. Ela fica salva <strong>somente no seu navegador</strong> e não é enviada a nenhum servidor.
+            </p>
+            <input
+              className="ap-input"
+              type="password"
+              placeholder="sk-proj-..."
+              value={keyInput}
+              onChange={e => setKeyInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && saveKey()}
+              style={{ marginBottom:14 }}
+            />
+            <button className="btn-primary" onClick={saveKey} style={{ width:"100%" }}>
+              Salvar e continuar
+            </button>
+            <p style={{ fontSize:11, color:"var(--muted)", marginTop:12, textAlign:"center" as const }}>
+              Obtenha sua chave em <strong>platform.openai.com/api-keys</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Progress bar */}
+      <div className="progress-bar" style={{ width:`${progress}%` }}/>
+
+      {/* Top bar */}
+      <header style={{
+        background:"rgba(255,255,255,0.82)",
+        backdropFilter:"saturate(200%) blur(24px)",
+        WebkitBackdropFilter:"saturate(200%) blur(24px)",
+        borderBottom:"1px solid var(--border)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        height:52, position:"sticky", top:0, zIndex:10,
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{
+            width:22, height:22, borderRadius:6,
+            background:"linear-gradient(135deg,#0071E3,#34aadc)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+          }}>
+            <span style={{ fontSize:11, color:"white", fontWeight:800 }}>C</span>
+          </div>
+          <span style={{ fontSize:15, fontWeight:700, color:"var(--text)", letterSpacing:"-0.02em" }}>
+            CampanhaAI
+          </span>
+        </div>
+      </header>
+
+      <main style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"44px 20px 72px" }}>
+        <div style={{ width:"100%", maxWidth: isWide ? 740 : 500, transition:"max-width 0.35s cubic-bezier(0.22,1,0.36,1)" }}>
+
+          {/* Step indicator */}
+          <div style={{ display:"flex", alignItems:"center", marginBottom:32 }}>
+            {STEP_LABELS.map((label, i) => {
+              const n      = i + 1;
+              const done   = step > n;
+              const active = step === n;
+              return (
+                <div key={n} style={{ display:"flex", alignItems:"center", flex: i < STEP_LABELS.length-1 ? 1 : 0, minWidth:0 }}>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:5, flexShrink:0 }}>
+                    <div style={{
+                      width:30, height:30, borderRadius:"50%",
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:12, fontWeight:700,
+                      background: done ? "var(--success)" : active ? "var(--primary)" : "var(--surface)",
+                      color: done || active ? "white" : "var(--muted)",
+                      border: done || active ? "none" : "1.5px solid var(--border-input)",
+                      boxShadow: active ? "0 0 0 4px var(--primary-ring)" : "none",
+                      transition:"all 0.25s cubic-bezier(0.22,1,0.36,1)",
+                    }}>
+                      {done ? (
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                          <path d="M2.5 6.5L5.5 9.5L10.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : n}
+                    </div>
+                    <span style={{
+                      fontSize:10, fontWeight: active ? 600 : 400,
+                      color: active ? "var(--text)" : done ? "var(--success)" : "var(--muted)",
+                      letterSpacing:"0.01em",
+                      transition:"all 0.2s",
+                      whiteSpace:"nowrap" as const,
+                    }}>
+                      {label}
+                    </span>
+                  </div>
+                  {i < STEP_LABELS.length-1 && (
+                    <div style={{
+                      flex:1, height:1.5, margin:"0 6px", marginBottom:16,
+                      background: step > n
+                        ? "linear-gradient(90deg,var(--success),var(--primary))"
+                        : "var(--border-mid)",
+                      borderRadius:2,
+                      transition:"background 0.4s",
+                    }}/>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Card */}
+          <div style={{
+            background:"var(--surface)",
+            borderRadius:20,
+            boxShadow:"0 2px 24px rgba(0,0,0,0.07),0 0 0 1px var(--border)",
+            padding: step === 4 ? "28px 24px" : "32px 30px",
+            overflow:"hidden",
+          }}>
+            <div key={step} className={dir === "fwd" ? "slide-fwd" : "slide-bwd"}>
+
+              {/* ── Step 1: Cliente ── */}
+              {step === 1 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+                  <CardTitle title="Sobre o cliente" sub="Informações básicas para personalizar a estratégia"/>
+
+                  <Field label="Nome do cliente">
+                    <input className="ap-input" placeholder="Ex: Clínica Saúde+"
+                      value={form.clientName} onChange={e=>set("clientName",e.target.value)}/>
+                  </Field>
+
+                  <Field label="Produto ou serviço">
+                    <input className="ap-input" placeholder="Ex: Plano de saúde empresarial"
+                      value={form.product} onChange={e=>set("product",e.target.value)}/>
+                  </Field>
+
+                  <Field label="Site ou landing page" optional>
+                    <input className="ap-input" placeholder="https://seusite.com.br"
+                      value={form.website} onChange={e=>set("website",e.target.value)}/>
+                  </Field>
+                </div>
+              )}
+
+              {/* ── Step 2: Campanha ── */}
+              {step === 2 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
+                  <CardTitle title="Sobre a campanha" sub="Parâmetros estratégicos"/>
+
+                  {/* Nome da campanha */}
+                  <Field label="Nome da campanha">
+                    <input className="ap-input"
+                      placeholder="Ex: Lançamento Verão, Black Friday, Captação de Leads…"
+                      value={form.campaignName}
+                      onChange={e => set("campaignName", e.target.value)}
+                    />
+                  </Field>
+
+                  {/* Objetivo */}
+                  <Field label="Objetivo principal">
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                      {OBJECTIVES.map(obj => {
+                        const active = form.objective===obj.value;
+                        return (
+                          <button key={obj.value} type="button"
+                            className={`obj-card${active?" active":""}`}
+                            onClick={()=>set("objective",obj.value)}
+                            style={{
+                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
+                              background: active ? "var(--primary-dim)" : "var(--surface-2)",
+                            }}
+                          >
+                            <div style={{ fontSize:22, marginBottom:5 }}>{obj.emoji}</div>
+                            <div style={{ fontSize:11, fontWeight:600, color: active?"var(--primary)":"var(--text-sub)", lineHeight:1.3 }}>
+                              {obj.label}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
+                  {/* Plataformas */}
+                  <Field label="Plataformas">
+                    <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                      {PLATFORM_GROUPS.map(grp => (
+                        <div key={grp.group}>
+                          <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:7 }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:"var(--text-sub)", letterSpacing:"0.02em" }}>
+                              {grp.group}
+                            </span>
+                            <span style={{ fontSize:10, color:"var(--muted)" }}>— {grp.hint}</span>
+                          </div>
+                          <div style={{ display:"grid", gridTemplateColumns:`repeat(${grp.platforms.length},1fr)`, gap:8 }}>
+                            {grp.platforms.map(p => {
+                              const active = form.platforms.includes(p.value);
+                              return (
+                                <button key={p.value} type="button" className="plat-card"
+                                  onClick={()=>togglePlatform(p.value)}
+                                  style={{
+                                    border:`1.5px solid ${active?p.color:"var(--border-input)"}`,
+                                    background: active ? `${p.color}10` : "var(--surface-2)",
+                                  }}
+                                >
+                                  <div style={{
+                                    width:30, height:30, borderRadius:8, flexShrink:0,
+                                    background: active ? p.color : `${p.color}18`,
+                                    display:"flex", alignItems:"center", justifyContent:"center",
+                                  }}>
+                                    <span style={{ fontSize:15, fontWeight:900, color: active?"white":p.color, lineHeight:1 }}>
+                                      {p.letter}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize:12, fontWeight:600, color: active?"var(--text)":"var(--text-sub)" }}>
+                                    {p.value}
+                                  </span>
+                                  {active && (
+                                    <div style={{
+                                      marginLeft:"auto", width:18, height:18, borderRadius:"50%",
+                                      background:p.color, display:"flex", alignItems:"center", justifyContent:"center",
+                                      flexShrink:0,
+                                    }}>
+                                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                                        <path d="M2 5L4.2 7.2L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                    </div>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Field>
+
+                  {/* Orçamento */}
+                  <Field label="Orçamento">
+                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                      {/* Tipo Total / Diário */}
+                      <div style={{ display:"inline-flex", background:"var(--surface-2)", borderRadius:10, padding:3, border:"1px solid var(--border-mid)", width:"fit-content" }}>
+                        {(["total","diario"] as BudgetType[]).map(t=>(
+                          <button key={t} type="button" onClick={()=>set("budgetType",t)} style={{
+                            padding:"6px 18px", borderRadius:8, fontSize:13, fontWeight:500,
+                            cursor:"pointer", border:"none", fontFamily:"inherit",
+                            background: form.budgetType===t ? "var(--surface)" : "transparent",
+                            color: form.budgetType===t ? "var(--text)" : "var(--muted)",
+                            boxShadow: form.budgetType===t ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                            transition:"all 0.15s",
+                          }}>
+                            {t==="total"?"Total":"Diário"}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ position:"relative" }}>
+                        <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", fontSize:14, fontWeight:700, color:"var(--text-sub)", pointerEvents:"none" }}>R$</span>
+                        <input className="ap-input" type="number" min="1"
+                          placeholder={form.budgetType==="total"?"5.000":"200"}
+                          style={{ paddingLeft:42 }}
+                          value={form.budget} onChange={e=>set("budget",e.target.value)}/>
+                      </div>
+                    </div>
+                  </Field>
+
+                  {/* Budget level toggle */}
+                  <Field label="Orçamento definido por">
+                    <div style={{ display:"inline-flex", background:"var(--surface-2)", borderRadius:10, padding:3, border:"1px solid var(--border-mid)", width:"fit-content" }}>
+                      {([
+                        { v:"adset"    as BudgetLevel, label:"Conjunto de anúncios" },
+                        { v:"campaign" as BudgetLevel, label:"Campanha" },
+                      ]).map(opt=>(
+                        <button key={opt.v} type="button" onClick={()=>set("budgetLevel",opt.v)} style={{
+                          padding:"7px 16px", borderRadius:8, fontSize:13, fontWeight:500,
+                          cursor:"pointer", border:"none", fontFamily:"inherit",
+                          background: form.budgetLevel===opt.v ? "var(--surface)" : "transparent",
+                          color: form.budgetLevel===opt.v ? "var(--text)" : "var(--muted)",
+                          boxShadow: form.budgetLevel===opt.v ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                          transition:"all 0.15s",
+                        }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+
+                  {/* Período */}
+                  <Field label="Período da campanha">
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                      {(["7 dias","15 dias","30 dias","Personalizado"] as const).map(label => {
+                        const val: Duration = label === "Personalizado" ? "personalizado" : label as Duration;
+                        const active = form.duration === val;
+                        return (
+                          <button key={label} type="button" className="ap-pill"
+                            onClick={() => set("duration", val)}
+                            style={{
+                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
+                              background: active ? "var(--primary-dim)" : "transparent",
+                              color: active ? "var(--primary)" : "var(--muted)",
+                              fontWeight: active ? 600 : 500,
+                            }}
+                          >{label}</button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Date pickers — only when Personalizado */}
+                    {form.duration === "personalizado" && (
+                      <div style={{ display:"flex", gap:12, marginTop:10 }}>
+                        <div style={{ flex:1 }}>
+                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                            Início da campanha
+                          </span>
+                          <input className="ap-input" type="date"
+                            value={form.startDate} onChange={e=>set("startDate",e.target.value)}/>
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                            Data de encerramento
+                          </span>
+                          <input className="ap-input" type="date"
+                            min={form.startDate || undefined}
+                            value={form.endDate} onChange={e=>set("endDate",e.target.value)}/>
+                        </div>
+                      </div>
+                    )}
+                    {form.duration === "personalizado" && form.startDate && form.endDate && daysBetween(form.startDate, form.endDate) > 0 && (
+                      <p style={{ fontSize:12, color:"var(--muted)", margin:0, marginTop:4 }}>
+                        → {daysBetween(form.startDate, form.endDate)} dias
+                        {daysBetween(form.startDate, form.endDate) < 15 ? " · apenas setup e encerramento" : ""}
+                      </p>
+                    )}
+                  </Field>
+
+                  {/* Estrutura */}
+                  <Field label="Estrutura da campanha"
+                    hint="Define quantas campanhas, conjuntos e anúncios serão criados por plataforma">
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:16 }}>
+                      {([
+                        { label:"Campanhas", key:"structCampaigns" as const, max:5 },
+                        { label:"Conjuntos", key:"structAdSets"    as const, max:10 },
+                        { label:"Anúncios",  key:"structAds"       as const, max:10 },
+                      ]).map(row=>(
+                        <div key={row.key} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}>
+                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                            {row.label}
+                          </span>
+                          <Stepper
+                            value={form[row.key] as number}
+                            min={1} max={row.max}
+                            onChange={v=>set(row.key, v as CampaignFormData[typeof row.key])}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {form.platforms.length > 0 && (
+                      <p style={{ fontSize:12, color:"var(--muted)", margin:0 }}>
+                        → {form.platforms.length * form.structCampaigns} campanha{form.platforms.length * form.structCampaigns>1?"s":""} ·{" "}
+                        {form.platforms.length * form.structCampaigns * form.structAdSets} conjunto{form.platforms.length * form.structCampaigns * form.structAdSets>1?"s":""} ·{" "}
+                        {form.platforms.length * form.structCampaigns * form.structAdSets * form.structAds} anúncio{form.platforms.length * form.structCampaigns * form.structAdSets * form.structAds>1?"s":""}
+                      </p>
+                    )}
+                  </Field>
+                </div>
+              )}
+
+              {/* ── Step 3: Público ── */}
+              {step === 3 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:22 }}>
+                  <CardTitle title="Sobre o público" sub="Quem deve ver os anúncios?"/>
+
+                  <Field label="Faixa etária">
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <input className="ap-input" type="number" min="13" max="65"
+                        style={{ textAlign:"center" as const }}
+                        value={form.ageMin} onChange={e=>set("ageMin",e.target.value)}/>
+                      <span style={{ color:"var(--muted)", fontSize:13, flexShrink:0, fontWeight:500 }}>–</span>
+                      <input className="ap-input" type="number" min="13" max="65"
+                        style={{ textAlign:"center" as const }}
+                        value={form.ageMax} onChange={e=>set("ageMax",e.target.value)}/>
+                      <span style={{ color:"var(--muted)", fontSize:13, flexShrink:0 }}>anos</span>
+                    </div>
+                  </Field>
+
+                  <Field label="Gênero">
+                    <div style={{ display:"flex", gap:8 }}>
+                      {GENDERS.map(g=>{
+                        const active = form.gender===g;
+                        return (
+                          <button key={g} type="button" className="ap-pill"
+                            onClick={()=>set("gender",g)}
+                            style={{
+                              border:`1.5px solid ${active?"#34C759":"var(--border-input)"}`,
+                              background: active ? "rgba(52,199,89,0.09)" : "transparent",
+                              color: active ? "#28A745" : "var(--muted)",
+                              fontWeight: active ? 600 : 500,
+                            }}
+                          >{g}</button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
+                  <Field label="Localização">
+                    <input className="ap-input" placeholder="Ex: São Paulo, SP · Brasil"
+                      value={form.location} onChange={e=>set("location",e.target.value)}/>
+                  </Field>
+
+                  {/* Tipo de público */}
+                  <Field label="Tipo de público">
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                      {([
+                        { v:"aberto"        as AudienceType, emoji:"🌐", title:"Aberto",       sub:"Sem segmentação por interesse" },
+                        { v:"personalizado" as AudienceType, emoji:"🎯", title:"Personalizado", sub:"Interesses e comportamentos" },
+                        { v:"remarketing"   as AudienceType, emoji:"🔁", title:"Remarketing",   sub:"Quem já interagiu com a marca" },
+                      ]).map(opt => {
+                        const active = form.audienceType === opt.v;
+                        const colors: Record<AudienceType, string> = {
+                          aberto:"#8B5CF6", personalizado:"#0071E3", remarketing:"#FF9500",
+                        };
+                        const c = colors[opt.v];
+                        return (
+                          <button key={opt.v} type="button"
+                            onClick={()=>set("audienceType", opt.v)}
+                            style={{
+                              padding:"13px 10px", borderRadius:12, cursor:"pointer",
+                              textAlign:"center" as const, fontFamily:"inherit",
+                              border:`1.5px solid ${active ? c : "var(--border-input)"}`,
+                              background: active ? `${c}10` : "var(--surface-2)",
+                              transition:"all 0.15s",
+                            }}
+                          >
+                            <div style={{ fontSize:20, marginBottom:5 }}>{opt.emoji}</div>
+                            <div style={{ fontSize:12, fontWeight:700, color: active ? c : "var(--text-sub)", marginBottom:2 }}>
+                              {opt.title}
+                            </div>
+                            <div style={{ fontSize:10, color:"var(--muted)", lineHeight:1.3 }}>
+                              {opt.sub}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+
+                  {/* Público Aberto — info */}
+                  {form.audienceType === "aberto" && (
+                    <div style={{
+                      background:"rgba(139,92,246,0.06)", borderRadius:10, padding:"12px 14px",
+                      border:"1px solid rgba(139,92,246,0.2)",
+                      display:"flex", gap:10, alignItems:"flex-start",
+                    }}>
+                      <span style={{ fontSize:15 }}>🌐</span>
+                      <p style={{ fontSize:13, color:"#6D28D9", margin:0, lineHeight:1.5 }}>
+                        A IA irá configurar a segmentação de forma ampla, sem filtros de interesse,
+                        permitindo que o algoritmo encontre o público ideal automaticamente.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Personalizado — interesses */}
+                  {form.audienceType === "personalizado" && (
+                    <Field label="Interesses e comportamentos"
+                      hint="Descreva interesses, hobbies e comportamentos do público-alvo">
+                      <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
+                        placeholder="Ex: saúde, fitness, bem-estar, seguidores de influencers de saúde"
+                        value={form.interests} onChange={e=>set("interests",e.target.value)}/>
+                    </Field>
+                  )}
+
+                  {/* Remarketing — fonte */}
+                  {form.audienceType === "remarketing" && (
+                    <Field label="Fonte do público de remarketing"
+                      hint="Escolha uma opção ou descreva a fonte">
+                      {(() => {
+                        const presets = [
+                          "Visitantes do site","Visualizadores de vídeo",
+                          "Engajamento no Instagram","Engajamento no Facebook",
+                          "Lista de clientes","Carrinho abandonado",
+                        ];
+                        const isPreset = presets.includes(form.remarketingSource);
+                        return (
+                          <>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:7, marginBottom:8 }}>
+                              {presets.map(src => {
+                                const active = form.remarketingSource === src;
+                                return (
+                                  <button key={src} type="button" className="ap-pill"
+                                    onClick={()=>set("remarketingSource", src)}
+                                    style={{
+                                      border:`1.5px solid ${active?"#FF9500":"var(--border-input)"}`,
+                                      background: active ? "rgba(255,149,0,0.09)" : "transparent",
+                                      color: active ? "#C07000" : "var(--muted)",
+                                      fontWeight: active ? 600 : 500,
+                                      fontSize:12,
+                                    }}
+                                  >{src}</button>
+                                );
+                              })}
+                            </div>
+                            <input className="ap-input"
+                              placeholder="Ou descreva outra fonte de remarketing…"
+                              value={isPreset ? "" : form.remarketingSource}
+                              onChange={e=>set("remarketingSource", e.target.value)}
+                            />
+                          </>
+                        );
+                      })()}
+                    </Field>
+                  )}
+                </div>
+              )}
+
+              {/* ── Step 4: Estrutura ── */}
+              {step === 4 && (
+                <div>
+                  <CardTitle
+                    title="Estrutura da campanha"
+                    sub="Revise e personalize campanhas, conjuntos e anúncios"
+                  />
+                  <StructureBuilder
+                    campaigns={form.campaignInputs}
+                    budgetLevel={form.budgetLevel}
+                    onChange={v=>set("campaignInputs",v)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div style={{
+                marginTop:16, padding:"11px 14px", borderRadius:10,
+                background:"var(--danger-dim)", border:"1px solid rgba(255,59,48,0.18)",
+                display:"flex", alignItems:"center", gap:8,
+              }}>
+                <span style={{ fontSize:14 }}>⚠️</span>
+                <p style={{ fontSize:13, color:"var(--danger)", margin:0 }}>{error}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div style={{ display:"flex", gap:10, marginTop:14 }}>
+            {step > 1 && (
+              <button className="btn-secondary" onClick={back}>← Voltar</button>
+            )}
+            {step < 4 ? (
+              <button className="btn-primary" onClick={next}>Continuar →</button>
+            ) : (
+              <button className="btn-primary" onClick={submit} disabled={loading}>
+                {loading ? (
+                  <>
+                    <svg style={{ width:15, height:15, animation:"spin 0.8s linear infinite", flexShrink:0 }} viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25"/>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Gerando planejamento…
+                  </>
+                ) : "✨ Gerar Planejamento com IA"}
+              </button>
+            )}
+          </div>
+
+          {step < 4 && (
+            <p style={{ textAlign:"center" as const, fontSize:12, color:"var(--muted)", marginTop:14 }}>
+              Passo {step} de {STEP_LABELS.length} · {STEP_LABELS[step]} a seguir
+            </p>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
