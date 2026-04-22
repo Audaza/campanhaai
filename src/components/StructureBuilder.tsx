@@ -343,40 +343,26 @@ function LinkSection({ ad, onUpdate }: { ad: AdInput; onUpdate: (u: Partial<AdIn
     try {
       let data: LinkPreviewData & { error?: string };
 
-      if (/youtube\.com|youtu\.be/i.test(url)) {
-        const r = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-        if (!r.ok) throw new Error("Não foi possível carregar o preview do YouTube");
-        const d = await r.json() as { title?: string; thumbnail_url?: string; author_name?: string };
-        data = { url, platform: "YouTube", image: d.thumbnail_url || "", title: d.title || "YouTube", description: `Por ${d.author_name || ""}`, siteName: "YouTube" };
-      } else if (/tiktok\.com/i.test(url)) {
-        const r = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-        if (!r.ok) throw new Error("Não foi possível carregar o preview do TikTok");
-        const d = await r.json() as { title?: string; thumbnail_url?: string; author_name?: string };
-        data = { url, platform: "TikTok", image: d.thumbnail_url || "", title: d.title || "TikTok", description: `@${d.author_name || ""}`, siteName: "TikTok" };
-      } else {
-        const platform = /instagram\.com/i.test(url) ? "Instagram" : /facebook\.com|fb\.com/i.test(url) ? "Facebook" : /twitter\.com|x\.com/i.test(url) ? "X" : "Link";
-        const proxyRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-        if (!proxyRes.ok) throw new Error("Não foi possível carregar o preview");
-        const proxy = await proxyRes.json() as { contents: string };
-        const html = proxy.contents || "";
-        const getMeta = (...names: string[]) => {
-          for (const n of names) {
-            const m = html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${n}["'][^>]+content=["']([^"']+)["']`, "i"))
-                   || html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${n}["']`, "i"));
-            if (m?.[1]) return m[1];
-          }
-          return "";
-        };
-        data = {
-          url, platform,
-          image:       getMeta("og:image", "og:image:url", "twitter:image"),
-          title:       getMeta("og:title", "twitter:title"),
-          description: getMeta("og:description", "twitter:description"),
-          siteName:    getMeta("og:site_name") || platform,
-        };
-        if (!data.image && !data.title) throw new Error("Não foi possível ler o preview deste link");
-      }
-      const res = { ok: true };
+      const platform = /instagram\.com/i.test(url) ? "Instagram"
+        : /youtube\.com|youtu\.be/i.test(url) ? "YouTube"
+        : /tiktok\.com/i.test(url) ? "TikTok"
+        : /facebook\.com|fb\.com/i.test(url) ? "Facebook"
+        : /twitter\.com|x\.com/i.test(url) ? "X"
+        : "Link";
+
+      const r = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}&screenshot=false`);
+      if (!r.ok) throw new Error("Não foi possível carregar o preview");
+      const ml = await r.json() as { status: string; data?: { title?: string; description?: string; image?: { url?: string }; publisher?: string } };
+      if (ml.status !== "success" || !ml.data) throw new Error("Não foi possível ler o preview deste link");
+      const d = ml.data;
+      data = {
+        url, platform,
+        image:       d.image?.url || "",
+        title:       d.title || "",
+        description: d.description || "",
+        siteName:    d.publisher || platform,
+      };
+      if (!data.image && !data.title) throw new Error("Não foi possível ler o preview deste link");
 
       // Auto-fill copy if currently empty, using the post description/caption
       const autoCopy = !ad.copy.trim() ? (data.description || data.title || "") : undefined;
