@@ -9,6 +9,7 @@ import type {
 } from "@/types/campaign";
 import StructureBuilder, { makeStructure } from "@/components/StructureBuilder";
 import type { StructurePrefill } from "@/components/StructureBuilder";
+import { PlatformLogo } from "@/components/PlatformLogo";
 
 /* ── Constants ── */
 
@@ -511,12 +512,13 @@ REGRAS:
                                 >
                                   <div style={{
                                     width:30, height:30, borderRadius:8, flexShrink:0,
-                                    background: active ? p.color : `${p.color}18`,
+                                    background: "#fff",
+                                    border: active ? `1.5px solid ${p.color}30` : `1px solid var(--border-input)`,
                                     display:"flex", alignItems:"center", justifyContent:"center",
+                                    boxShadow: active ? `0 1px 3px ${p.color}15` : "none",
+                                    transition: "all 0.15s ease",
                                   }}>
-                                    <span style={{ fontSize:15, fontWeight:900, color: active?"white":p.color, lineHeight:1 }}>
-                                      {p.letter}
-                                    </span>
+                                    <PlatformLogo platform={p.value} size={18} />
                                   </div>
                                   <span style={{ fontSize:12, fontWeight:600, color: active?"var(--text)":"var(--text-sub)" }}>
                                     {p.value}
