@@ -114,6 +114,76 @@ function PlatBadge({ platform }: { platform: string }) {
   );
 }
 
+/** Linha label + valor para a configuração Google Ads */
+function GoogleConfigRow({ label, value }: { label: string; value?: string }) {
+  if (!value) return null;
+  return (
+    <View style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+      <Text style={{
+        fontSize: 7.5, fontFamily: "Helvetica-Bold", color: MUTED,
+        letterSpacing: 0.9, width: 110, paddingTop: 2,
+      }}>
+        {label.toUpperCase()}
+      </Text>
+      <Text style={{ fontSize: 9.5, color: TEXT, flex: 1, lineHeight: 1.55 }}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/** Card com a configuração Google Ads (tipo + campos específicos) */
+function GoogleAdsConfigCard({ config }: { config: NonNullable<CampaignPlan["googleAdsConfig"]> }) {
+  const color = "#EA4335";
+  return (
+    <View style={{
+      backgroundColor: WHITE, borderRadius: 13,
+      borderWidth: 1, borderColor: BORDER,
+      borderLeftWidth: 4, borderLeftColor: color,
+      marginBottom: 14, overflow: "hidden",
+    }}>
+      {/* Header */}
+      <View style={{
+        paddingHorizontal: 22, paddingVertical: 14,
+        backgroundColor: color + "08",
+        borderBottomWidth: 1, borderBottomColor: BORDER,
+        flexDirection: "row", alignItems: "center", gap: 10,
+      }}>
+        <View style={{
+          width: 30, height: 30, borderRadius: 8,
+          backgroundColor: color + "16",
+          borderWidth: 1, borderColor: color + "22",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color }}>G</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 7.5, fontFamily: "Helvetica-Bold", color, letterSpacing: 1.1,
+          }}>
+            CONFIGURAÇÃO GOOGLE ADS
+          </Text>
+          <Text style={{ fontSize: 13, fontFamily: "Helvetica-Bold", color: TEXT, marginTop: 2, letterSpacing: -0.2 }}>
+            {config.campaignType}
+          </Text>
+        </View>
+      </View>
+
+      {/* Content — campos por tipo */}
+      <View style={{ paddingHorizontal: 22, paddingVertical: 14, gap: 10 }}>
+        <GoogleConfigRow label="Palavras-chave"       value={config.keywords} />
+        <GoogleConfigRow label="Kw negativas"         value={config.negativeKeywords} />
+        <GoogleConfigRow label="URL destino"          value={config.finalUrl} />
+        <GoogleConfigRow label="Sinais de público"    value={config.audienceSignals} />
+        <GoogleConfigRow label="Categorias"           value={config.shoppingCategories} />
+        <GoogleConfigRow label="Vídeo YouTube"        value={config.youtubeVideoUrl} />
+        <GoogleConfigRow label="Formato vídeo"        value={config.videoFormat} />
+        <GoogleConfigRow label="Formato Demand Gen"   value={config.demandGenFormat} />
+      </View>
+    </View>
+  );
+}
+
 /** Linha de público-alvo com chips (divide por " · ") */
 function AudienceBlock({ audience, color }: { audience: string; color: string }) {
   const parts = audience.includes(" · ") ? audience.split(" · ").filter(Boolean) : [audience];
@@ -350,6 +420,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
         <PageHeader client={plan.overview.clientName} section="Estrutura de Campanhas" />
 
         <View style={{ paddingHorizontal: 24, paddingTop: 18, paddingBottom: 20 }}>
+          {plan.googleAdsConfig && <GoogleAdsConfigCard config={plan.googleAdsConfig} />}
           {plan.campaigns.map((campaign, ci) => {
             const color = platColor(campaign.platform);
             const bg    = platBg(color);

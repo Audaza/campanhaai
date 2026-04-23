@@ -1,7 +1,45 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import type { AdFormat, AdInput, AdSetInput, CampaignInput, BudgetLevel, LinkPreviewData, Platform } from "@/types/campaign";
+import type { AdFormat, AdInput, AdSetInput, CampaignInput, BudgetLevel, LinkPreviewData, Platform, GoogleCampaignType } from "@/types/campaign";
+
+/* Google Ads — tipos sem upload manual de mídia */
+const GOOGLE_TEXT_ONLY_TYPES: GoogleCampaignType[] = ["Pesquisa", "Shopping", "Vídeo/YouTube"];
+
+/* Formatos de anúncio por tipo de campanha Google */
+function googleFormatsFor(type?: GoogleCampaignType | ""): AdFormat[] {
+  switch (type) {
+    case "Pesquisa":        return ["Responsivo de Pesquisa"];
+    case "Display":         return ["Display Responsivo"];
+    case "Vídeo/YouTube":   return ["Vídeo"];
+    case "Shopping":        return ["Display Responsivo"];
+    case "Performance Max": return ["Imagem","Vídeo","Carrossel","Display Responsivo"];
+    case "Demand Gen":      return ["Imagem","Vídeo","Carrossel"];
+    default:                return ["Responsivo de Pesquisa","Display Responsivo","Vídeo"];
+  }
+}
+
+/* Label do grupo de anúncios (Google vs outros) */
+function googleAdGroupLabel(type?: GoogleCampaignType | ""): string {
+  if (type === "Pesquisa" || type === "Display" || type === "Performance Max" || type === "Demand Gen") return "Grupo de Anúncios";
+  if (type === "Vídeo/YouTube") return "Grupo de Vídeos";
+  if (type === "Shopping") return "Grupo de Produtos";
+  return "Grupo de Anúncios";
+}
+
+/* Label do campo de audiência (Google varia por tipo) */
+function googleAudienceLabel(type?: GoogleCampaignType | ""): string {
+  if (type === "Pesquisa") return "Palavras-chave / Segmentação";
+  if (type === "Shopping") return "Produtos / Categorias";
+  return "Segmentação / Público";
+}
+
+/* Label do copy por tipo */
+function googleCopyLabel(type?: GoogleCampaignType | ""): string {
+  if (type === "Pesquisa") return "Títulos e descrições";
+  if (type === "Shopping") return "Observações do produto";
+  return "Copy do anúncio";
+}
 
 /* ── Platform-specific config ─────────────────────────────────────────────── */
 interface PlatformCfg {
@@ -509,10 +547,29 @@ function BudgetInput({ value, placeholder, color, onChange }: {
 }
 
 /* ── Ad card ── */
-function AdCard({ ad, platform, onUpdate }: {
-  ad: AdInput; platform: Platform; onUpdate:(u:Partial<AdInput>)=>void;
+function AdCard({ ad, platform, googleCampaignType, onUpdate }: {
+  ad: AdInput; platform: Platform; googleCampaignType?: GoogleCampaignType | ""; onUpdate:(u:Partial<AdInput>)=>void;
 }) {
   const cfg = PLATFORM_CONFIG[platform];
+
+  /* Google Ads: formatos dinâmicos por sub-tipo; outras plataformas mantém o padrão */
+  const formats: AdFormat[] = platform === "Google Ads" && googleCampaignType
+    ? googleFormatsFor(googleCampaignType)
+    : cfg.formats;
+
+  /* Google Ads: esconde upload de mídia para Pesquisa/Shopping/Vídeo-YouTube */
+  const isGoogleTextOnly = platform === "Google Ads"
+    && !!googleCampaignType
+    && GOOGLE_TEXT_ONLY_TYPES.includes(googleCampaignType as GoogleCampaignType);
+
+  /* Label do campo copy — adaptado para Google */
+  const copyLabel = platform === "Google Ads"
+    ? googleCopyLabel(googleCampaignType)
+    : "Copy do anúncio";
+
+  const copyPlaceholder = platform === "Google Ads" && googleCampaignType === "Pesquisa"
+    ? "Título 1 | Título 2 | Título 3 \\n Descrição do anúncio..."
+    : "Texto principal do anúncio…";
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -561,13 +618,29 @@ function AdCard({ ad, platform, onUpdate }: {
               backgroundRepeat:"no-repeat", backgroundPosition:"right 6px center", backgroundSize:"14px",
             }}
           >
-            {cfg.formats.map(f=><option key={f} value={f}>{f}</option>)}
+            {formats.map(f=><option key={f} value={f}>{f}</option>)}
           </select>
         </div>
       </div>
 
-      {/* Quando vem de link preview: imagem (50%) + copy (50%) lado a lado */}
-      {ad.linkPreview && hasMedia && ad.fileType === "image" && ad.fileDataUrl ? (
+      {/* Google Ads text-only (Pesquisa/Shopping/Vídeo-YouTube): só copy, sem upload */}
+      {isGoogleTextOnly ? (
+        <div>
+          <SbLabel>{copyLabel}</SbLabel>
+          <SbInput value={ad.copy} placeholder={copyPlaceholder}
+            onChange={v=>onUpdate({copy:v})} multiline/>
+          {googleCampaignType === "Vídeo/YouTube" && (
+            <p style={{ fontSize:11, color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>
+              → O link do vídeo foi definido no passo anterior. Descreva aqui a mensagem principal ou CTA do anúncio.
+            </p>
+          )}
+          {googleCampaignType === "Shopping" && (
+            <p style={{ fontSize:11, color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>
+              → Shopping usa o feed de produtos do Merchant Center. Aqui você pode descrever posicionamentos ou lances específicos.
+            </p>
+          )}
+        </div>
+      ) : ad.linkPreview && hasMedia && ad.fileType === "image" && ad.fileDataUrl ? (
         <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
           {/* Imagem — 50%, completa, sem corte */}
           <div style={{ width:"50%", flexShrink:0, position:"relative" }}>
@@ -604,10 +677,10 @@ function AdCard({ ad, platform, onUpdate }: {
 
           {/* Copy — outra metade */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", gap:0 }}>
-            <SbLabel>Copy do anúncio</SbLabel>
+            <SbLabel>{copyLabel}</SbLabel>
             <SbTextarea
               value={ad.copy}
-              placeholder="Texto principal do anúncio…"
+              placeholder={copyPlaceholder}
               onChange={v => onUpdate({ copy: v })}
             />
           </div>
@@ -662,8 +735,8 @@ function AdCard({ ad, platform, onUpdate }: {
 
           {/* Copy do anúncio — abaixo do criativo */}
           <div>
-            <SbLabel>Copy do anúncio</SbLabel>
-            <SbInput value={ad.copy} placeholder="Texto principal do anúncio…"
+            <SbLabel>{copyLabel}</SbLabel>
+            <SbInput value={ad.copy} placeholder={copyPlaceholder}
               onChange={v=>onUpdate({copy:v})} multiline/>
           </div>
         </>
@@ -676,12 +749,13 @@ function AdCard({ ad, platform, onUpdate }: {
 /* ── Main ── */
 
 interface Props {
-  campaigns:   CampaignInput[];
-  budgetLevel: BudgetLevel;
-  onChange:    (c:CampaignInput[])=>void;
+  campaigns:          CampaignInput[];
+  budgetLevel:        BudgetLevel;
+  googleCampaignType?: GoogleCampaignType | "";
+  onChange:           (c:CampaignInput[])=>void;
 }
 
-export default function StructureBuilder({ campaigns, budgetLevel, onChange }: Props) {
+export default function StructureBuilder({ campaigns, budgetLevel, googleCampaignType, onChange }: Props) {
   function updC(cIdx:number, u:Partial<CampaignInput>) {
     onChange(campaigns.map((c,i)=>i===cIdx?{...c,...u}:c));
   }
@@ -718,6 +792,8 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
         const cfg      = PLATFORM_CONFIG[campaign.platform];
         const color    = cfg.color;
         const totalAds = campaign.adSets.reduce((s,as)=>s+as.ads.length,0);
+        const adGroupLabel  = campaign.platform === "Google Ads" ? googleAdGroupLabel(googleCampaignType)  : cfg.adGroupLabel;
+        const audienceLabel = campaign.platform === "Google Ads" ? googleAudienceLabel(googleCampaignType) : cfg.audienceLabel;
         return (
           <div key={campaign.id} style={{
             background:"var(--surface-2)", borderRadius:14,
@@ -737,7 +813,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
                   {campaign.platform}
                 </div>
                 <span style={{ fontSize:11, color:"var(--muted)", marginLeft:"auto" }}>
-                  {campaign.adSets.length} {cfg.adGroupLabel.toLowerCase()}{campaign.adSets.length>1?"s":""} · {totalAds} anúncio{totalAds>1?"s":""}
+                  {campaign.adSets.length} {adGroupLabel.toLowerCase()}{campaign.adSets.length>1?"s":""} · {totalAds} anúncio{totalAds>1?"s":""}
                 </span>
               </div>
               <div style={{ display:"flex", gap:10 }}>
@@ -772,7 +848,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
                       {asIdx+1}
                     </div>
                     <span style={{ fontSize:12, fontWeight:600, color:"var(--text-sub)", marginLeft:7 }}>
-                      {cfg.adGroupLabel} {asIdx+1}
+                      {adGroupLabel} {asIdx+1}
                     </span>
                     {campaign.adSets.length>1 && (
                       <button type="button" onClick={()=>remAdSet(cIdx,asIdx)} style={{
@@ -787,8 +863,8 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
 
                   <div style={{ display:"flex", gap:9, marginBottom:10 }}>
                     <div style={{ flex:1 }}>
-                      <SbLabel>Nome do {cfg.adGroupLabel.toLowerCase()}</SbLabel>
-                      <SbInput value={adSet.name} placeholder={`${cfg.adGroupLabel} ${asIdx+1}`}
+                      <SbLabel>Nome do {adGroupLabel.toLowerCase()}</SbLabel>
+                      <SbInput value={adSet.name} placeholder={`${adGroupLabel} ${asIdx+1}`}
                         onChange={v=>updAs(cIdx,asIdx,{name:v})}/>
                     </div>
                     {budgetLevel==="adset" && (
@@ -802,7 +878,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
                   </div>
 
                   <div style={{ marginBottom:12 }}>
-                    <SbLabel>{cfg.audienceLabel}</SbLabel>
+                    <SbLabel>{audienceLabel}</SbLabel>
                     <SbInput value={adSet.audience}
                       placeholder={cfg.audiencePH}
                       onChange={v=>updAs(cIdx,asIdx,{audience:v})} multiline/>
@@ -830,6 +906,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
                         <AdCard
                           ad={ad}
                           platform={campaign.platform}
+                          googleCampaignType={googleCampaignType}
                           onUpdate={u=>updAd(cIdx,asIdx,adIdx,u)}
                         />
                       </div>
@@ -846,7 +923,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, onChange }: P
               <button type="button" className="add-dashed"
                 onClick={()=>addAdSet(cIdx)}
                 style={{ borderRadius:10, padding:"11px" }}>
-                + Adicionar {cfg.adGroupLabel.toLowerCase()}
+                + Adicionar {adGroupLabel.toLowerCase()}
               </button>
             </div>
           </div>

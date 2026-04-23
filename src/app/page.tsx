@@ -345,7 +345,13 @@ IMPORTANTE: Retorne SOMENTE um JSON válido, sem markdown, com estes campos:
 REGRAS:
 - budgetDistribution: 1 entrada por plataforma (total: ${d.platforms.length})
 - timeline: 5 fases: "Data Início","Otimização","Escala","Análise de Desempenho","Análise Final"
-- creatives: 2 por plataforma (total: ${d.platforms.length * 2})`;
+- creatives: 2 por plataforma (total: ${d.platforms.length * 2})
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Pesquisa" ? `- Para Google Ads de Pesquisa, os criativos devem usar formato "Responsivo de Pesquisa" e o campo body deve conter 3 títulos (máx 30 caracteres cada) + 2 descrições (máx 90 caracteres cada), separados por ' | '. Sem imagem, sem vídeo.` : ""}
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Display" ? `- Para Google Ads de Display, criativos formato "Display Responsivo": headline curta + descrição curta (imagem será inserida manualmente pelo usuário).` : ""}
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Vídeo/YouTube" ? `- Para Google Ads de Vídeo/YouTube, criativos formato "Vídeo": descrever angle do vídeo, CTA e frases-chave sobrepostas. O vídeo já foi fornecido: ${d.youtubeVideoUrl || "URL não informada"}.` : ""}
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Shopping" ? `- Para Google Ads de Shopping, criativos formato "Display Responsivo" descrevendo angle de produto, mas sem gerar copy pesada — o feed do Merchant Center cuida disso.` : ""}
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Performance Max" ? `- Para Google Ads Performance Max, criativos podem misturar Imagem, Vídeo e Carrossel. Incluir sinais de público no texto.` : ""}
+${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? `- Para Google Ads Demand Gen, formato ${d.googleDemandGenFormat || "Imagem única"}: criativos visuais com copy curta e direta.` : ""}`;
 
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -390,8 +396,23 @@ REGRAS:
         return strategic.timeline;
       })();
 
+      const googleAdsConfig = d.platforms.includes("Google Ads") && d.googleCampaignType
+        ? {
+            campaignType:       d.googleCampaignType,
+            keywords:           d.googleKeywords.trim() || undefined,
+            negativeKeywords:   d.googleNegativeKeywords.trim() || undefined,
+            finalUrl:           d.googleFinalUrl.trim() || undefined,
+            audienceSignals:    d.googleAudienceSignals.trim() || undefined,
+            shoppingCategories: d.googleShoppingCategories.trim() || undefined,
+            videoFormat:        d.googleVideoFormat || undefined,
+            demandGenFormat:    d.googleDemandGenFormat || undefined,
+            youtubeVideoUrl:    d.youtubeVideoUrl.trim() || undefined,
+          }
+        : undefined;
+
       const plan: CampaignPlan = {
         overview:           strategic.overview,
+        googleAdsConfig,
         campaigns,
         budgetDistribution: strategic.budgetDistribution,
         timeline,
@@ -1072,6 +1093,7 @@ REGRAS:
                   <StructureBuilder
                     campaigns={form.campaignInputs}
                     budgetLevel={form.budgetLevel}
+                    googleCampaignType={form.googleCampaignType}
                     onChange={v=>set("campaignInputs",v)}
                   />
                 </div>

@@ -464,6 +464,79 @@ export default function ResultadoPage() {
           <section className="rise rise-2" style={{ marginBottom: 24 }}>
             <Heading title="Estrutura de Campanhas" label="Organização" />
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {plan.googleAdsConfig && (() => {
+                const g = plan.googleAdsConfig!;
+                const gcolor = "#EA4335";
+                const rows: { label: string; value?: string }[] = [
+                  { label: "Palavras-chave",        value: g.keywords },
+                  { label: "Kw negativas",          value: g.negativeKeywords },
+                  { label: "URL destino",           value: g.finalUrl },
+                  { label: "Sinais de público",     value: g.audienceSignals },
+                  { label: "Categorias",            value: g.shoppingCategories },
+                  { label: "Vídeo YouTube",         value: g.youtubeVideoUrl },
+                  { label: "Formato vídeo",         value: g.videoFormat },
+                  { label: "Formato Demand Gen",    value: g.demandGenFormat },
+                ].filter(r => !!r.value);
+                return (
+                  <div className="card" style={{
+                    overflow: "hidden",
+                    borderLeft: `4px solid ${gcolor}`,
+                  }}>
+                    <div style={{
+                      padding: "14px 22px",
+                      background: `${gcolor}08`,
+                      borderBottom: "1px solid #e4e8ef",
+                      display: "flex", alignItems: "center", gap: 12,
+                    }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 9,
+                        background: `${gcolor}16`,
+                        border: `1px solid ${gcolor}22`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 15, fontWeight: 800, color: gcolor,
+                      }}>G</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{
+                          fontSize: 10, fontWeight: 800, letterSpacing: "0.1em",
+                          color: gcolor, textTransform: "uppercase" as const,
+                        }}>
+                          Configuração Google Ads
+                        </div>
+                        <div style={{
+                          fontSize: 15, fontWeight: 700, color: "#0d1117",
+                          marginTop: 2, letterSpacing: "-0.015em",
+                        }}>
+                          {g.campaignType}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ padding: "14px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
+                      {rows.map((row, i) => (
+                        <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, color: "#9ba8bb",
+                            letterSpacing: "0.08em", width: 130, flexShrink: 0,
+                            textTransform: "uppercase" as const, paddingTop: 3,
+                          }}>
+                            {row.label}
+                          </span>
+                          <span style={{
+                            fontSize: 13, color: "#0d1117", flex: 1, lineHeight: 1.55,
+                            wordBreak: "break-word" as const,
+                          }}>
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
+                      {rows.length === 0 && (
+                        <span style={{ fontSize: 12, color: "#9ba8bb", fontStyle: "italic" as const }}>
+                          Sem detalhes adicionais informados.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               {plan.campaigns.map((campaign, ci) => {
                 const c = pc(campaign.platform);
                 return (

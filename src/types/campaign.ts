@@ -142,6 +142,18 @@ export interface CreativeSuggestion {
   fileName?:    string;
 }
 
+export interface GoogleAdsPlanConfig {
+  campaignType:       GoogleCampaignType;
+  keywords?:          string;
+  negativeKeywords?:  string;
+  finalUrl?:          string;
+  audienceSignals?:   string;
+  shoppingCategories?:string;
+  videoFormat?:       string;
+  demandGenFormat?:   string;
+  youtubeVideoUrl?:   string;
+}
+
 export interface CampaignPlan {
   overview: {
     clientName:  string;
@@ -153,6 +165,7 @@ export interface CampaignPlan {
     platforms:   Platform[];
     summary:     string;
   };
+  googleAdsConfig?:   GoogleAdsPlanConfig;
   campaigns:          Campaign[];
   budgetDistribution: BudgetDistribution[];
   timeline:           TimelinePhase[];
