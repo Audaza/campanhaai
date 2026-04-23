@@ -1,5 +1,12 @@
 export type Platform   = "Facebook" | "Instagram" | "Google Ads" | "TikTok Ads" | "YouTube Ads";
 export type Objective  = "Conversão" | "Tráfego" | "Geração de Leads" | "Reconhecimento de Marca" | "Engajamento" | "Vendas Diretas";
+export type GoogleCampaignType =
+  | "Pesquisa"
+  | "Display"
+  | "Vídeo/YouTube"
+  | "Shopping"
+  | "Performance Max"
+  | "Demand Gen";
 export type Gender     = "Todos" | "Masculino" | "Feminino";
 export type Duration   = "7 dias" | "15 dias" | "30 dias" | "60 dias" | "90 dias" | "personalizado";
 export type BudgetType   = "total" | "diario";
@@ -76,6 +83,15 @@ export interface CampaignFormData {
   structAdSets:      number;
   structAds:         number;
   campaignInputs:    CampaignInput[];
+  googleCampaignType:       GoogleCampaignType | "";
+  googleKeywords:           string;
+  googleNegativeKeywords:   string;
+  googleFinalUrl:           string;
+  googleAudienceSignals:    string;
+  googleShoppingCategories: string;
+  googleVideoFormat:        string;
+  googleDemandGenFormat:    string;
+  youtubeVideoUrl:          string;
 }
 
 /* ── Campaign Plan (result) ── */

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
-  CampaignFormData, Objective, Platform,
+  CampaignFormData, Objective, Platform, GoogleCampaignType,
   Gender, Duration, BudgetType, BudgetLevel, AudienceType,
   Campaign, CampaignPlan, TimelinePhase,
 } from "@/types/campaign";
@@ -42,6 +42,29 @@ const PLATFORM_GROUPS: { group: string; hint: string; platforms: { value: Platfo
   },
 ];
 
+const GOOGLE_CAMPAIGN_TYPES: { value: GoogleCampaignType; emoji: string; label: string; sub: string }[] = [
+  { value: "Pesquisa",        emoji: "🔎",  label: "Pesquisa",        sub: "Anúncios por palavras-chave" },
+  { value: "Display",         emoji: "🖼️",  label: "Display",         sub: "Banners na rede Google" },
+  { value: "Vídeo/YouTube",   emoji: "▶️",  label: "Vídeo/YouTube",   sub: "Anúncios em vídeo" },
+  { value: "Shopping",        emoji: "🛍️",  label: "Shopping",        sub: "Feed de produtos" },
+  { value: "Performance Max", emoji: "⚡",  label: "Performance Max", sub: "Todos canais Google" },
+  { value: "Demand Gen",      emoji: "📈",  label: "Demand Gen",      sub: "Discovery + YouTube" },
+];
+
+const GOOGLE_VIDEO_FORMATS = [
+  "In-Stream puláveis",
+  "In-Stream não puláveis",
+  "Bumper (6s)",
+  "In-Feed",
+  "Shorts",
+];
+
+const GOOGLE_DEMAND_GEN_FORMATS = [
+  "Imagem única",
+  "Carrossel",
+  "Vídeo",
+];
+
 const DURATIONS: Duration[] = ["15 dias","30 dias","60 dias","90 dias"];
 const GENDERS: Gender[]     = ["Todos","Masculino","Feminino"];
 const STEP_LABELS            = ["Cliente","Campanha","Público","Estrutura"];
@@ -60,6 +83,15 @@ const INITIAL: CampaignFormData = {
   structAdSets:    2,
   structAds:       1,
   campaignInputs: [],
+  googleCampaignType:       "",
+  googleKeywords:           "",
+  googleNegativeKeywords:   "",
+  googleFinalUrl:           "",
+  googleAudienceSignals:    "",
+  googleShoppingCategories: "",
+  googleVideoFormat:        "",
+  googleDemandGenFormat:    "",
+  youtubeVideoUrl:          "",
 };
 
 /* ── Timeline local computation ── */
@@ -201,6 +233,23 @@ export default function Home() {
     }
     if (step === 2) {
       if (!form.platforms.length) { setError("Selecione pelo menos uma plataforma."); return; }
+      if (form.platforms.includes("Google Ads")) {
+        if (!form.googleCampaignType) {
+          setError("Escolha o tipo de campanha do Google Ads."); return;
+        }
+        if (form.googleCampaignType === "Pesquisa" && !form.googleKeywords.trim()) {
+          setError("Informe as palavras-chave da campanha de Pesquisa."); return;
+        }
+        if (form.googleCampaignType === "Vídeo/YouTube" && !form.youtubeVideoUrl.trim()) {
+          setError("Informe o link do vídeo do YouTube."); return;
+        }
+        if (form.googleCampaignType === "Shopping" && !form.googleFinalUrl.trim()) {
+          setError("Informe a URL da loja."); return;
+        }
+        if (form.googleCampaignType === "Performance Max" && !form.googleFinalUrl.trim()) {
+          setError("Informe a URL de destino da Performance Max."); return;
+        }
+      }
       if (!form.budget.trim())    { setError("Informe o valor do orçamento."); return; }
     }
     if (step === 3) {
@@ -262,6 +311,24 @@ CAMPANHA:
 - Plataformas: ${d.platforms.join(", ")}
 - Orçamento: ${budgetInfo}
 - Período: ${d.duration}
+${d.platforms.includes("Google Ads") ? `
+GOOGLE ADS:
+- Tipo de campanha: ${d.googleCampaignType || "não definido"}
+${d.googleCampaignType === "Pesquisa" ? `- Palavras-chave: ${d.googleKeywords.trim() || "não informado"}
+- Palavras-chave negativas: ${d.googleNegativeKeywords.trim() || "não informado"}
+- URL de destino: ${d.googleFinalUrl.trim() || "não informado"}` : ""}
+${d.googleCampaignType === "Display" ? `- Público-alvo: ${d.googleAudienceSignals.trim() || "não informado"}
+- URL de destino: ${d.googleFinalUrl.trim() || "não informado"}` : ""}
+${d.googleCampaignType === "Vídeo/YouTube" ? `- Vídeo do YouTube: ${d.youtubeVideoUrl.trim() || "não informado"}
+- Formato: ${d.googleVideoFormat || "não definido"}` : ""}
+${d.googleCampaignType === "Shopping" ? `- URL da loja: ${d.googleFinalUrl.trim() || "não informado"}
+- Categorias: ${d.googleShoppingCategories.trim() || "não informado"}` : ""}
+${d.googleCampaignType === "Performance Max" ? `- Temas/palavras-chave: ${d.googleKeywords.trim() || "não informado"}
+- URL de destino: ${d.googleFinalUrl.trim() || "não informado"}
+- Sinais de público: ${d.googleAudienceSignals.trim() || "não informado"}` : ""}
+${d.googleCampaignType === "Demand Gen" ? `- Formato: ${d.googleDemandGenFormat || "não definido"}
+- Sinais de público: ${d.googleAudienceSignals.trim() || "não informado"}` : ""}
+` : ""}
 
 PÚBLICO:
 - Tipo: ${d.audienceType === "aberto" ? "Público Aberto" : d.audienceType === "remarketing" ? `Remarketing — ${d.remarketingSource}` : "Personalizado"}
@@ -472,30 +539,6 @@ REGRAS:
                     />
                   </Field>
 
-                  {/* Objetivo */}
-                  <Field label="Objetivo principal">
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-                      {OBJECTIVES.map(obj => {
-                        const active = form.objective===obj.value;
-                        return (
-                          <button key={obj.value} type="button"
-                            className={`obj-card${active?" active":""}`}
-                            onClick={()=>set("objective",obj.value)}
-                            style={{
-                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
-                              background: active ? "var(--primary-dim)" : "var(--surface-2)",
-                            }}
-                          >
-                            <div style={{ fontSize:22, marginBottom:5 }}>{obj.emoji}</div>
-                            <div style={{ fontSize:11, fontWeight:600, color: active?"var(--primary)":"var(--text-sub)", lineHeight:1.3 }}>
-                              {obj.label}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </Field>
-
                   {/* Plataformas */}
                   <Field label="Plataformas">
                     <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -548,6 +591,198 @@ REGRAS:
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </Field>
+
+                  {/* Google Ads — Tipo de campanha (condicional) */}
+                  {form.platforms.includes("Google Ads") && (
+                    <Field label="Tipo de campanha Google Ads" hint="Escolha o formato de campanha no Google">
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                        {GOOGLE_CAMPAIGN_TYPES.map(t => {
+                          const active = form.googleCampaignType === t.value;
+                          return (
+                            <button key={t.value} type="button"
+                              onClick={() => set("googleCampaignType", t.value)}
+                              style={{
+                                padding:"13px 8px", borderRadius:12, cursor:"pointer",
+                                textAlign:"center" as const, fontFamily:"inherit",
+                                border:`1.5px solid ${active ? "#EA4335" : "var(--border-input)"}`,
+                                background: active ? "rgba(234,67,53,0.08)" : "var(--surface-2)",
+                                transition:"all 0.15s",
+                              }}
+                            >
+                              <div style={{ fontSize:22, marginBottom:5 }}>{t.emoji}</div>
+                              <div style={{ fontSize:12, fontWeight:700, color: active ? "#C5221F" : "var(--text-sub)", marginBottom:2 }}>
+                                {t.label}
+                              </div>
+                              <div style={{ fontSize:10, color:"var(--muted)", lineHeight:1.3 }}>
+                                {t.sub}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+                  )}
+
+                  {/* Google Ads — campos modulares por tipo */}
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Pesquisa" && (
+                    <>
+                      <Field label="Palavras-chave"
+                        hint="Separe por vírgula ou uma por linha (ex: plano de saúde, seguro saúde empresarial)">
+                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="plano de saúde empresarial, convênio médico pequena empresa, cotação plano de saúde"
+                          value={form.googleKeywords} onChange={e=>set("googleKeywords", e.target.value)}/>
+                      </Field>
+                      <Field label="Palavras-chave negativas" optional
+                        hint="Termos que NÃO devem acionar o anúncio (ex: grátis, curso)">
+                        <textarea className="ap-input" rows={2} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="grátis, curso, emprego"
+                          value={form.googleNegativeKeywords} onChange={e=>set("googleNegativeKeywords", e.target.value)}/>
+                      </Field>
+                      <Field label="URL de destino (landing page)" optional>
+                        <input className="ap-input" type="url"
+                          placeholder="https://seusite.com.br/oferta"
+                          value={form.googleFinalUrl} onChange={e=>set("googleFinalUrl", e.target.value)}/>
+                      </Field>
+                    </>
+                  )}
+
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Display" && (
+                    <>
+                      <Field label="Público-alvo / interesses"
+                        hint="Descreva interesses, segmentos no mercado ou públicos similares">
+                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="Pessoas interessadas em saúde, bem-estar, gestão de RH, planos empresariais"
+                          value={form.googleAudienceSignals} onChange={e=>set("googleAudienceSignals", e.target.value)}/>
+                      </Field>
+                      <Field label="URL de destino" optional>
+                        <input className="ap-input" type="url"
+                          placeholder="https://seusite.com.br/oferta"
+                          value={form.googleFinalUrl} onChange={e=>set("googleFinalUrl", e.target.value)}/>
+                      </Field>
+                    </>
+                  )}
+
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Vídeo/YouTube" && (
+                    <>
+                      <Field label="Link do vídeo no YouTube"
+                        hint="Cole o URL público do vídeo que será usado no anúncio">
+                        <input className="ap-input" type="url"
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={form.youtubeVideoUrl} onChange={e=>set("youtubeVideoUrl", e.target.value)}/>
+                      </Field>
+                      <Field label="Formato do anúncio em vídeo">
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                          {GOOGLE_VIDEO_FORMATS.map(fmt => {
+                            const active = form.googleVideoFormat === fmt;
+                            return (
+                              <button key={fmt} type="button" className="ap-pill"
+                                onClick={() => set("googleVideoFormat", fmt)}
+                                style={{
+                                  border:`1.5px solid ${active?"#EA4335":"var(--border-input)"}`,
+                                  background: active ? "rgba(234,67,53,0.08)" : "transparent",
+                                  color: active ? "#C5221F" : "var(--muted)",
+                                  fontWeight: active ? 600 : 500,
+                                  fontSize:12,
+                                }}
+                              >{fmt}</button>
+                            );
+                          })}
+                        </div>
+                      </Field>
+                    </>
+                  )}
+
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Shopping" && (
+                    <>
+                      <Field label="URL da loja" hint="Site com os produtos ou feed do Merchant Center">
+                        <input className="ap-input" type="url"
+                          placeholder="https://sualoja.com.br"
+                          value={form.googleFinalUrl} onChange={e=>set("googleFinalUrl", e.target.value)}/>
+                      </Field>
+                      <Field label="Categorias de produto" optional
+                        hint="Principais categorias/produtos a serem anunciados">
+                        <textarea className="ap-input" rows={2} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="Tênis esportivos, roupas fitness, acessórios"
+                          value={form.googleShoppingCategories} onChange={e=>set("googleShoppingCategories", e.target.value)}/>
+                      </Field>
+                    </>
+                  )}
+
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Performance Max" && (
+                    <>
+                      <Field label="Temas e palavras-chave"
+                        hint="Principais temas, termos e ideias que representam a oferta">
+                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="plano de saúde empresarial, convênio PME, benefícios corporativos"
+                          value={form.googleKeywords} onChange={e=>set("googleKeywords", e.target.value)}/>
+                      </Field>
+                      <Field label="URL de destino">
+                        <input className="ap-input" type="url"
+                          placeholder="https://seusite.com.br/oferta"
+                          value={form.googleFinalUrl} onChange={e=>set("googleFinalUrl", e.target.value)}/>
+                      </Field>
+                      <Field label="Sinais de público" optional
+                        hint="Interesses, dados demográficos ou públicos similares para guiar a IA">
+                        <textarea className="ap-input" rows={2} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="Gestores de RH, donos de PMEs, interesse em benefícios corporativos"
+                          value={form.googleAudienceSignals} onChange={e=>set("googleAudienceSignals", e.target.value)}/>
+                      </Field>
+                    </>
+                  )}
+
+                  {form.platforms.includes("Google Ads") && form.googleCampaignType === "Demand Gen" && (
+                    <>
+                      <Field label="Formato preferido">
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                          {GOOGLE_DEMAND_GEN_FORMATS.map(fmt => {
+                            const active = form.googleDemandGenFormat === fmt;
+                            return (
+                              <button key={fmt} type="button" className="ap-pill"
+                                onClick={() => set("googleDemandGenFormat", fmt)}
+                                style={{
+                                  border:`1.5px solid ${active?"#EA4335":"var(--border-input)"}`,
+                                  background: active ? "rgba(234,67,53,0.08)" : "transparent",
+                                  color: active ? "#C5221F" : "var(--muted)",
+                                  fontWeight: active ? 600 : 500,
+                                  fontSize:12,
+                                }}
+                              >{fmt}</button>
+                            );
+                          })}
+                        </div>
+                      </Field>
+                      <Field label="Sinais de público / interesses"
+                        hint="Descreva o público que deve ver o anúncio">
+                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
+                          placeholder="Pessoas interessadas em saúde corporativa, gestores de RH"
+                          value={form.googleAudienceSignals} onChange={e=>set("googleAudienceSignals", e.target.value)}/>
+                      </Field>
+                    </>
+                  )}
+
+                  {/* Objetivo */}
+                  <Field label="Objetivo principal">
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                      {OBJECTIVES.map(obj => {
+                        const active = form.objective===obj.value;
+                        return (
+                          <button key={obj.value} type="button"
+                            className={`obj-card${active?" active":""}`}
+                            onClick={()=>set("objective",obj.value)}
+                            style={{
+                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
+                              background: active ? "var(--primary-dim)" : "var(--surface-2)",
+                            }}
+                          >
+                            <div style={{ fontSize:22, marginBottom:5 }}>{obj.emoji}</div>
+                            <div style={{ fontSize:11, fontWeight:600, color: active?"var(--primary)":"var(--text-sub)", lineHeight:1.3 }}>
+                              {obj.label}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </Field>
 
