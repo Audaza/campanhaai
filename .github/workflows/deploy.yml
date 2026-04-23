@@ -10,7 +10,7 @@ jobs:
     name: Build estático e upload FTP
     runs-on: ubuntu-latest
     env:
-      BASE_PATH: /projetos/campanhaai
+      BASE_PATH: /apps/campanhaai
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +36,6 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: ./out/
-          server-dir: /domains/audaza.com/public_html/projetos/campanhaai/
+          server-dir: /domains/audaza.com/public_html/apps/campanhaai/
           exclude: |
             **/.DS_Store
