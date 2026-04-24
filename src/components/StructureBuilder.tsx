@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { AdFormat, AdInput, AdSetInput, CampaignInput, BudgetLevel, LinkPreviewData, Platform, GoogleCampaignType } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
+import GoogleCampaignCard from "@/components/GoogleCampaignCard";
 
 /* Google Ads — tipos sem upload manual de mídia */
 const GOOGLE_TEXT_ONLY_TYPES: GoogleCampaignType[] = ["Pesquisa", "Shopping", "Vídeo/YouTube"];
@@ -800,10 +801,21 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       {campaigns.map((campaign, cIdx) => {
+        /* Google Ads usa UI completamente dedicada — sem "conjuntos" nem "anúncios" à la Meta */
+        if (campaign.platform === "Google Ads") {
+          return (
+            <GoogleCampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              budgetLevel={budgetLevel}
+              onChange={(updated) => onChange(campaigns.map((c, i) => i === cIdx ? updated : c))}
+            />
+          );
+        }
+
         const cfg      = PLATFORM_CONFIG[campaign.platform];
         const color    = cfg.color;
         const totalAds = campaign.adSets.reduce((s,as)=>s+as.ads.length,0);
-        /* Usa o tipo da campanha em si (per-campaign), caindo no prop global se ausente */
         const gType    = campaign.googleCampaignType ?? (googleCampaignType || undefined);
         const labels   = getHierarchyLabels(campaign.platform, gType);
         const adGroupLabel  = labels.adSet;

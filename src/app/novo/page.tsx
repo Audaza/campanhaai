@@ -269,11 +269,10 @@ export default function Home() {
         if (!allowed.includes(prev.objective)) {
           next = { ...next, objective: allowed[0] };
         }
-        /* Shopping/PMax: sem nível "anúncios" → força a 1 pra manter consistência interna */
-        const labels = getHierarchyLabels("Google Ads", prev.googleCampaignType);
-        if (!labels.hasManualAds && prev.structAds !== 1) {
-          next = { ...next, structAds: 1 };
-        }
+      }
+      /* Google: sempre 1 "unidade" por grupo (RSA/RDA/Vídeo/Asset Group) — reflete best practice real */
+      if (prev.structAds !== 1) {
+        next = { ...next, structAds: 1 };
       }
       return next;
     });
@@ -1013,7 +1012,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     const labels = primaryPlatform
                       ? getHierarchyLabels(primaryPlatform, form.googleCampaignType)
                       : getHierarchyLabels("Facebook", "");
-                    const showAdsLevel = labels.hasManualAds;
+                    /* Google sempre 2 níveis (campanhas × grupos); Meta/TikTok/YouTube mantêm 3 níveis se aplicável */
+                    const showAdsLevel = !hasGoogle && labels.hasManualAds;
                     const nC  = form.platforms.length * form.structCampaigns;
                     const nAs = nC * form.structAdSets;
                     const nAd = nAs * form.structAds;
@@ -1025,9 +1025,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                       steppers.push({ label:labels.adPlural, key:"structAds", max:10 });
                     }
                     const hintText = hasGoogle
-                      ? showAdsLevel
-                        ? `${labels.adSetPlural.toLowerCase()} e ${labels.adPlural.toLowerCase()} por campanha — nomenclatura do Google ${form.googleCampaignType}`
-                        : `${labels.adSetPlural.toLowerCase()} por campanha — ${form.googleCampaignType} não tem anúncios manuais`
+                      ? `Campanhas × ${labels.adSetPlural.toLowerCase()} — estrutura nativa do Google ${form.googleCampaignType}`
                       : "Define quantas campanhas, conjuntos e anúncios serão criados por plataforma";
                     return (
                       <Field label="Estrutura da campanha" hint={hintText}>
