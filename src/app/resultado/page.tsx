@@ -1,16 +1,37 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { CampaignPlan, Platform } from "@/types/campaign";
-import { ArrowLeft, Download } from "lucide-react";
+import type { CampaignPlan } from "@/types/campaign";
+import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, Sparkles } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { savePlan } from "@/lib/savedPlans";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 
-/* Facebook + Instagram = Meta — mostra os 2 ícones juntos quando ambos estão na campanha */
+/* ═══════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════ */
+const C = {
+  bg:        "#f4f6fa",
+  surface:   "#ffffff",
+  border:    "#e4e8ef",
+  borderMid: "#eef0f5",
+  text:      "#0d1117",
+  subtext:   "#475263",
+  muted:     "#8994a6",
+  soft:      "#c8d0db",
+  brand:     "#0071E3",
+  brandDark: "#0057c2",
+  brandSoft: "#EBF5FF",
+  accent:    "#16a34a",
+  accentBg:  "#dcfce7",
+} as const;
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
 function platformsToDisplay(platform: string, all: readonly string[]): string[] {
   const isMeta = platform === "Facebook" || platform === "Instagram";
   const bothMeta = all.includes("Facebook") && all.includes("Instagram");
@@ -24,7 +45,6 @@ function platformLabel(platform: string, all: readonly string[]): string {
   return platform;
 }
 
-/* ─── Clean metadata from copy ─── */
 const META_RE = /^[0-9][0-9,.\sKkMm]*likes?,\s*[0-9][0-9,.\sKkMm]*comments?\s*-\s*[^:]+:\s*/i;
 function cleanCopy(text: string): string {
   if (!text) return "";
@@ -41,89 +61,129 @@ function extractPostDate(text: string): string | null {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/* ─── Platform config ─── */
-const PLAT: Record<string, { color: string; bg: string; glyph: string }> = {
-  "Meta Ads":    { color: "#1877F2", bg: "rgba(24,119,242,0.09)",  glyph: "f" },
-  "Facebook":    { color: "#1877F2", bg: "rgba(24,119,242,0.09)",  glyph: "f" },
-  "Instagram":   { color: "#E1306C", bg: "rgba(225,48,108,0.09)",  glyph: "◈" },
-  "Google Ads":  { color: "#EA4335", bg: "rgba(234,67,53,0.09)",   glyph: "G" },
-  "TikTok Ads":  { color: "#0a0a0a", bg: "rgba(0,0,0,0.06)",       glyph: "♪" },
-  "YouTube Ads": { color: "#FF0000", bg: "rgba(255,0,0,0.09)",     glyph: "▶" },
+const PLAT: Record<string, { color: string; bg: string }> = {
+  "Meta Ads":    { color: "#1877F2", bg: "rgba(24,119,242,0.09)" },
+  "Facebook":    { color: "#1877F2", bg: "rgba(24,119,242,0.09)" },
+  "Instagram":   { color: "#E1306C", bg: "rgba(225,48,108,0.09)" },
+  "Google Ads":  { color: "#EA4335", bg: "rgba(234,67,53,0.09)"  },
+  "TikTok Ads":  { color: "#444cf7", bg: "rgba(68,76,247,0.09)"  },
+  "YouTube Ads": { color: "#FF0000", bg: "rgba(255,0,0,0.09)"    },
 };
 function pc(p: string) {
   if (p.includes("Facebook")) return PLAT["Facebook"];
   if (p.includes("Instagram") && !p.includes("Facebook")) return PLAT["Instagram"];
-  return PLAT[p] ?? { color: "#0071E3", bg: "rgba(0,113,227,0.09)", glyph: "●" };
+  return PLAT[p] ?? { color: C.brand, bg: "rgba(0,113,227,0.09)" };
 }
 
-/* ─── Copy button ─── */
+/* ═══════════════════════════════════════════════════════
+   COMPONENTES REUTILIZÁVEIS
+═══════════════════════════════════════════════════════ */
+
+/** Botão de copiar */
 function CopyBtn({ text }: { text: string }) {
   const [ok, setOk] = useState(false);
   return (
     <button
       onClick={() => navigator.clipboard.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1800); })}
       style={{
-        fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6,
-        border: ok ? "1px solid rgba(22,163,74,0.3)" : "1px solid #e4e8ef",
-        background: ok ? "#f0fdf4" : "#f6f8fa",
-        color: ok ? "#16a34a" : "#8994a6",
+        display: "inline-flex", alignItems: "center", gap: 4,
+        fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6,
+        border: ok ? `1px solid ${C.accent}40` : `1px solid ${C.border}`,
+        background: ok ? C.accentBg : C.bg,
+        color: ok ? C.accent : C.muted,
         cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit",
-        whiteSpace: "nowrap" as const, flexShrink: 0,
+        whiteSpace: "nowrap", flexShrink: 0,
       }}
     >
-      {ok ? "✓ Copiado" : "Copiar"}
+      {ok ? <><Check size={11} /> Copiado</> : "Copiar"}
     </button>
   );
 }
 
-/* ─── Section heading ─── */
-function Heading({ title, label }: { title: string; label: string }) {
+/** Título de seção: eyebrow + h2 + barra */
+function SectionTitle({
+  eyebrow, title, subtitle, style,
+}: { eyebrow: string; title: string; subtitle?: string; style?: CSSProperties }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <p style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.09em",
-        textTransform: "uppercase" as const, color: "#9ba8bb",
-        margin: "0 0 4px",
-      }}>{label}</p>
+    <div style={{ marginBottom: 18, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <div style={{ width: 4, height: 16, background: C.brand, borderRadius: 2 }} />
+        <p style={{
+          fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em",
+          textTransform: "uppercase", color: C.brand, margin: 0,
+        }}>
+          {eyebrow}
+        </p>
+      </div>
       <h2 style={{
-        fontSize: 19, fontWeight: 700, color: "#0d1117",
-        margin: 0, letterSpacing: "-0.03em",
-      }}>{title}</h2>
+        fontSize: 22, fontWeight: 800, color: C.text,
+        margin: 0, letterSpacing: "-0.035em", lineHeight: 1.15,
+      }}>
+        {title}
+      </h2>
+      {subtitle && (
+        <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", lineHeight: 1.5 }}>
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
 
-/* ─── Audience row ─── */
-function AudienceRow({ audience, color }: { audience: string; color: string }) {
+/** Chip genérico */
+function Chip({ label, color = C.muted, bg = C.borderMid, icon }: {
+  label: string; color?: string; bg?: string; icon?: ReactNode;
+}) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
+      fontSize: 11.5, fontWeight: 700, color,
+      background: bg, padding: "4px 10px", borderRadius: 999,
+      border: `1px solid ${color}1a`, letterSpacing: "0.01em",
+    }}>
+      {icon}
+      {label}
+    </span>
+  );
+}
+
+/** Bloco de público-alvo com chips */
+function AudienceBlock({ audience, color, label }: { audience: string; color: string; label?: string }) {
   const parts = audience.includes(" · ") ? audience.split(" · ").filter(Boolean) : [audience];
   return (
     <div style={{
-      padding: "11px 14px", borderLeft: `3px solid ${color}`,
-      background: `${color}07`, borderRadius: "0 9px 9px 0",
+      padding: "10px 14px", borderLeft: `3px solid ${color}`,
+      background: `${color}09`, borderRadius: "0 10px 10px 0",
     }}>
       <p style={{
-        fontSize: 9.5, fontWeight: 700, letterSpacing: "0.08em",
-        textTransform: "uppercase" as const, color, margin: "0 0 7px",
-      }}>Público-alvo</p>
-      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 5 }}>
+        fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em",
+        textTransform: "uppercase", color, margin: "0 0 6px",
+      }}>
+        {label ?? "Público-alvo"}
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
         {parts.map((part, i) => (
           <span key={i} style={{
-            fontSize: 12, color: "#0d1117", background: "white",
-            border: `1px solid ${color}20`, borderRadius: 20,
-            padding: "3px 11px", fontWeight: 500,
-          }}>{part}</span>
+            fontSize: 12, color: C.text, background: C.surface,
+            border: `1px solid ${color}26`, borderRadius: 999,
+            padding: "3px 10px", fontWeight: 500,
+          }}>
+            {part}
+          </span>
         ))}
       </div>
     </div>
   );
 }
 
-/* ─── Page ─── */
+/* ═══════════════════════════════════════════════════════
+   PÁGINA
+═══════════════════════════════════════════════════════ */
 export default function ResultadoPage() {
   const router = useRouter();
-  const [plan, setPlan]     = useState<CampaignPlan | null>(null);
+  const [plan, setPlan]       = useState<CampaignPlan | null>(null);
   const [isClient, setClient] = useState(false);
-  const [savedId,  setSavedId]    = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
@@ -151,33 +211,44 @@ export default function ResultadoPage() {
   }
 
   if (!plan) return (
-    <div style={{ minHeight: "100vh", background: "#f3f5f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <svg style={{ width: 28, height: 28, animation: "spin 0.8s linear infinite", color: "#0071E3" }} viewBox="0 0 24 24" fill="none">
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg style={{ width: 28, height: 28, animation: "spin 0.8s linear infinite", color: C.brand }} viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.2" />
         <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
     </div>
   );
 
+  /* Stats agregados */
   const totalAdSets = plan.campaigns.reduce((s, c) => s + c.adSets.length, 0);
-  const totalAds    = plan.campaigns.reduce((s, c) => s + (getHierarchyLabels(c.platform, c.googleCampaignType).hasManualAds ? c.adSets.reduce((ss, as) => ss + as.ads.length, 0) : 0), 0);
-  const totalFiles  = plan.campaigns.reduce((s, c) =>
+  const totalAds = plan.campaigns.reduce(
+    (s, c) => s + (getHierarchyLabels(c.platform, c.googleCampaignType).hasManualAds
+      ? c.adSets.reduce((ss, as) => ss + as.ads.length, 0) : 0), 0);
+  const totalFiles = plan.campaigns.reduce((s, c) =>
     s + c.adSets.reduce((ss, as) => ss + as.ads.filter(a => a.fileDataUrl || a.fileName).length, 0), 0);
 
-  /* Labels agregados — se só há 1 tipo de campanha (ex: só Google Pesquisa), usa a terminologia específica.
-     Se há mais de 1 tipo, cai no termo genérico. */
   const allLabels = plan.campaigns.map(c => getHierarchyLabels(c.platform, c.googleCampaignType));
   const uniqueAdSet = [...new Set(allLabels.map(l => l.adSetPlural))];
   const uniqueAd    = [...new Set(allLabels.map(l => l.adPlural))];
-  const adSetStatLabel = uniqueAdSet.length === 1 ? uniqueAdSet[0] : "Conjuntos / Grupos";
+  const adSetStatLabel = uniqueAdSet.length === 1 ? uniqueAdSet[0] : "Conjuntos";
   const adStatLabel    = uniqueAd.length    === 1 ? uniqueAd[0]    : "Anúncios";
 
-  const stats: Array<{ label: string; value: number; icon: string; accent?: boolean }> = [
-    { label: "Campanhas",     value: plan.campaigns.length, icon: "◐" },
-    { label: adSetStatLabel,  value: totalAdSets,           icon: "◧" },
-    ...(totalAds > 0 ? [{ label: adStatLabel, value: totalAds, icon: "◇" }] : []),
-    ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles, icon: "✦", accent: true }] : []),
+  const stats = [
+    { label: "Campanhas",      value: plan.campaigns.length },
+    { label: adSetStatLabel,   value: totalAdSets },
+    ...(totalAds > 0   ? [{ label: adStatLabel, value: totalAds }]         : []),
+    ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles, accent: true }] : []),
   ];
+
+  const maxBudgetPct = Math.max(...plan.budgetDistribution.map(b => b.percentage), 1);
+
+  /* Estados do botão salvar */
+  const saveBtnConfig = {
+    saving: { icon: <RotateCw size={13} style={{ animation: "spin 0.8s linear infinite" }} />, label: "Salvando…", bg: C.bg,        color: C.subtext },
+    saved:  { icon: <Check size={13} />,                                                        label: savedId ? "Atualizado" : "Salvo", bg: C.accentBg, color: C.accent },
+    error:  { icon: <AlertCircle size={13} />,                                                  label: "Erro ao salvar",           bg: "#fee2e2", color: "#dc2626" },
+    idle:   { icon: savedId ? <RotateCw size={13} /> : <Save size={13} />,                     label: savedId ? "Atualizar" : "Salvar", bg: C.surface, color: C.subtext },
+  }[saveState];
 
   return (
     <>
@@ -191,131 +262,169 @@ export default function ResultadoPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
 
         @keyframes riseIn {
-          from { opacity: 0; transform: translateY(20px); }
+          from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        .rise { animation: riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        .rise-0 { animation-delay: 0.00s; }
-        .rise-1 { animation-delay: 0.07s; }
-        .rise-2 { animation-delay: 0.14s; }
-        .rise-3 { animation-delay: 0.21s; }
-        .rise-4 { animation-delay: 0.28s; }
+        @keyframes shimmer {
+          0%   { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+
+        .rise { animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .d-0 { animation-delay: 0.00s; }
+        .d-1 { animation-delay: 0.06s; }
+        .d-2 { animation-delay: 0.12s; }
+        .d-3 { animation-delay: 0.18s; }
+        .d-4 { animation-delay: 0.24s; }
+        .d-5 { animation-delay: 0.30s; }
 
         .card {
-          background: #ffffff;
-          border: 1px solid #e4e8ef;
+          background: ${C.surface};
+          border: 1px solid ${C.border};
           border-radius: 14px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.03);
+          box-shadow: 0 1px 2px rgba(13,17,23,0.04), 0 6px 24px rgba(13,17,23,0.03);
+          transition: box-shadow 0.25s, transform 0.25s;
+        }
+        .card-hover:hover {
+          box-shadow: 0 4px 8px rgba(13,17,23,0.05), 0 14px 44px rgba(13,17,23,0.06);
+          transform: translateY(-1px);
         }
 
         .topbar-btn {
-          display: flex; align-items: center; gap: 6px;
-          background: none; border: none; cursor: pointer;
-          font-size: 13px; font-weight: 500; color: #5a6478;
-          font-family: inherit; padding: 6px 0; transition: color 0.15s;
-          letter-spacing: -0.01em;
+          display: inline-flex; align-items: center; gap: 6px;
+          background: transparent; border: 1px solid transparent;
+          cursor: pointer; font-size: 13px; font-weight: 600;
+          color: ${C.subtext}; font-family: inherit;
+          padding: 7px 12px; border-radius: 8px;
+          transition: all 0.18s; letter-spacing: -0.01em;
         }
-        .topbar-btn:hover { color: #0d1117; }
+        .topbar-btn:hover { background: ${C.bg}; color: ${C.text}; }
 
         .export-btn {
-          display: flex; align-items: center; gap: 6px;
-          padding: 8px 18px; border-radius: 8px; border: none;
-          font-size: 13px; font-weight: 600; font-family: inherit;
-          background: #0d1117; color: white;
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 9px 16px; border-radius: 9px; border: none;
+          font-size: 13px; font-weight: 700; font-family: inherit;
+          background: ${C.text}; color: white;
           cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          box-shadow: 0 1px 3px rgba(13,17,23,0.2), 0 4px 14px rgba(13,17,23,0.12);
           letter-spacing: -0.015em;
         }
-        .export-btn:hover { background: #1e2d3d; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
-        .export-btn:disabled { background: #e8ebf1; color: #9ba8bb; cursor: not-allowed; transform: none; box-shadow: none; }
+        .export-btn:hover {
+          background: #1a2332; transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(13,17,23,0.24), 0 8px 22px rgba(13,17,23,0.18);
+        }
+        .export-btn:disabled {
+          background: ${C.border}; color: ${C.muted}; cursor: not-allowed;
+          transform: none; box-shadow: none;
+        }
 
         .stat-cell {
-          flex: 1; padding: 18px 20px; text-align: center;
-          border-right: 1px solid #e4e8ef;
+          flex: 1; padding: 18px 16px; text-align: center;
+          border-right: 1px solid ${C.border};
           transition: background 0.15s;
         }
         .stat-cell:last-child { border-right: none; }
         .stat-cell:hover { background: #fafbfd; }
 
-        .budget-card {
-          background: white; border: 1px solid #e4e8ef;
-          border-radius: 12px; padding: 20px 22px;
-          transition: box-shadow 0.2s, transform 0.2s;
+        .bar-track { background: ${C.borderMid}; border-radius: 99px; height: 5px; overflow: hidden; }
+        .bar-fill {
+          height: 100%; border-radius: 99px;
+          background-image: linear-gradient(90deg, currentColor 0%, currentColor 100%);
+          transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .budget-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); transform: translateY(-1px); }
-
-        .bar-track { background: #eef0f5; border-radius: 99px; height: 4px; overflow: hidden; }
-        .bar-fill   { height: 100%; border-radius: 99px; }
 
         .adset-card {
-          background: #f8f9fb; border-radius: 11px;
-          border: 1px solid #e4e8ef; overflow: hidden;
-          transition: border-color 0.15s;
+          background: ${C.bg}; border-radius: 11px;
+          border: 1px solid ${C.borderMid}; overflow: hidden;
+          transition: border-color 0.2s;
         }
 
         .ad-item {
-          background: white; border-radius: 9px;
-          border: 1px solid #eaecf2; padding: 12px 14px;
-          transition: box-shadow 0.15s;
+          background: ${C.surface}; border-radius: 9px;
+          border: 1px solid ${C.borderMid}; padding: 12px 14px;
+          transition: all 0.2s;
         }
-        .ad-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+        .ad-item:hover {
+          box-shadow: 0 2px 10px rgba(13,17,23,0.05);
+          border-color: ${C.border};
+        }
 
         .tl-node {
           position: absolute; left: -52px; top: 0;
-          width: 28px; height: 28px; border-radius: 50%;
+          width: 30px; height: 30px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          font-size: 11px; font-weight: 800; z-index: 1;
+          font-size: 12px; font-weight: 800; z-index: 1;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .rec-card {
+          display: flex; gap: 14px;
+          background: ${C.surface}; border-radius: 11px;
+          border: 1px solid ${C.border};
+          padding: 16px 18px;
+          transition: all 0.2s;
+        }
+        .rec-card:hover {
+          border-color: ${C.brand}40;
+          box-shadow: 0 4px 16px rgba(0,113,227,0.08);
+          transform: translateY(-1px);
+        }
+
+        @media (max-width: 720px) {
+          .budget-grid { grid-template-columns: 1fr !important; }
+          .hero-row { flex-direction: column !important; align-items: flex-start !important; }
+          .hero-budget { text-align: left !important; }
+          .stat-cell { padding: 14px 10px; }
         }
       `}</style>
 
-      <div className="res-root" style={{ minHeight: "100vh", background: "#f3f5f8" }}>
+      <div className="res-root" style={{ minHeight: "100vh", background: C.bg }}>
 
-        {/* ── Topbar ── */}
+        {/* ═════ TOPBAR ═════ */}
         <header style={{
           position: "sticky", top: 0, zIndex: 50,
-          background: "rgba(243,245,248,0.88)",
-          backdropFilter: "blur(24px) saturate(180%)",
-          WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          borderBottom: "1px solid #e4e8ef",
+          background: "rgba(244,246,250,0.82)",
+          backdropFilter: "blur(22px) saturate(180%)",
+          WebkitBackdropFilter: "blur(22px) saturate(180%)",
+          borderBottom: `1px solid ${C.border}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 28px", height: 54,
+          padding: "0 24px", height: 58,
         }}>
           <button className="topbar-btn" onClick={() => router.push("/")}>
-            <ArrowLeft style={{ width: 14, height: 14 }} />
+            <ArrowLeft size={14} />
             Menu
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
             <div style={{
-              width: 26, height: 26, borderRadius: 7,
-              background: "linear-gradient(135deg, #0061c8, #34aadc)",
+              width: 28, height: 28, borderRadius: 8,
+              background: `linear-gradient(135deg, ${C.brandDark}, #34aadc)`,
               display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 2px 6px rgba(0,113,227,0.3)",
             }}>
               <span style={{ fontSize: 13, color: "white", fontWeight: 800, letterSpacing: "-0.03em" }}>C</span>
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: "#0d1117", letterSpacing: "-0.025em" }}>
-              Campanha Tráfego | Audaza
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.025em" }}>
+              Campanha Tráfego · Audaza
             </span>
           </div>
 
           {isClient && (
-            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saveState === "saving"}
                 className="topbar-btn"
                 style={{
-                  background: saveState === "saved" ? "#dcfce7" : "transparent",
-                  color: saveState === "saved" ? "#15803d" : saveState === "error" ? "#dc2626" : undefined,
-                  borderColor: saveState === "saved" ? "#86efac" : undefined,
+                  background: saveBtnConfig.bg,
+                  color: saveBtnConfig.color,
+                  border: saveState === "saved" ? `1px solid ${C.accent}35` : `1px solid ${C.border}`,
                 }}
               >
-                {saveState === "saving" ? "Salvando…"
-                 : saveState === "saved" ? (savedId ? "✓ Atualizado" : "✓ Salvo")
-                 : saveState === "error" ? "Erro ao salvar"
-                 : savedId ? "↻ Atualizar" : "💾 Salvar"}
+                {saveBtnConfig.icon}
+                {saveBtnConfig.label}
               </button>
 
               <PDFDownloadLink
@@ -323,8 +432,8 @@ export default function ResultadoPage() {
                 fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
               >
                 {({ loading: l }) => (
-                  <button disabled={l} className="export-btn" style={l ? { background: "#e8ebf1", color: "#9ba8bb", cursor: "not-allowed" } : {}}>
-                    <Download style={{ width: 13, height: 13 }} />
+                  <button disabled={l} className="export-btn">
+                    <Download size={13} />
                     {l ? "Gerando…" : "Exportar PDF"}
                   </button>
                 )}
@@ -333,55 +442,67 @@ export default function ResultadoPage() {
           )}
         </header>
 
-        <main style={{ maxWidth: 920, margin: "0 auto", padding: "32px 20px 100px" }}>
+        <main style={{ maxWidth: 960, margin: "0 auto", padding: "36px 20px 120px" }}>
 
-          {/* ═══════════════════════════════════════
-              OVERVIEW
-          ═══════════════════════════════════════ */}
-          <div className="card rise rise-0" style={{ marginBottom: 20, overflow: "hidden" }}>
-
-            {/* Hero */}
+          {/* ═════ HERO / OVERVIEW ═════ */}
+          <section className="card rise d-0" style={{ marginBottom: 28, overflow: "hidden" }}>
             <div style={{
-              background: "linear-gradient(135deg, #0057c2 0%, #0071E3 35%, #1a8aff 70%, #34aadc 100%)",
-              padding: "32px 32px 28px", position: "relative", overflow: "hidden",
+              background: `linear-gradient(135deg, #002d6b 0%, ${C.brandDark} 28%, ${C.brand} 62%, #34aadc 100%)`,
+              padding: "36px 36px 30px", position: "relative", overflow: "hidden",
             }}>
-              {/* Decorative circles */}
-              <div style={{ position: "absolute", top: -80, right: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", bottom: -50, right: 100, width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
-              <div style={{ position: "absolute", top: 20, right: 200, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.06)", pointerEvents: "none" }} />
+              {/* Gradient mesh decorativo */}
+              <div style={{
+                position: "absolute", top: -100, right: -80, width: 340, height: 340,
+                borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+              <div style={{
+                position: "absolute", bottom: -60, right: 60, width: 200, height: 200,
+                borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+              <div style={{
+                position: "absolute", top: 24, right: 240, width: 90, height: 90,
+                borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none",
+              }} />
 
-              <p style={{
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-                textTransform: "uppercase" as const,
-                color: "rgba(255,255,255,0.5)", margin: "0 0 18px",
+              {/* Eyebrow */}
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 20 }}>
+                <Sparkles size={13} style={{ color: "rgba(255,255,255,0.85)" }} />
+                <p style={{
+                  fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em",
+                  textTransform: "uppercase", color: "rgba(255,255,255,0.72)", margin: 0,
+                }}>
+                  Planejamento Estratégico · {new Date().toLocaleDateString("pt-BR")}
+                </p>
+              </div>
+
+              <div className="hero-row" style={{
+                display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                gap: 20, flexWrap: "wrap", position: "relative",
               }}>
-                Planejamento Estratégico · {new Date().toLocaleDateString("pt-BR")}
-              </p>
-
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20, flexWrap: "wrap" as const }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 260 }}>
                   <h1 style={{
-                    fontSize: 30, fontWeight: 800, color: "white", margin: "0 0 5px",
-                    letterSpacing: "-0.04em", lineHeight: 1.1,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
+                    fontSize: 34, fontWeight: 800, color: "white", margin: "0 0 6px",
+                    letterSpacing: "-0.045em", lineHeight: 1.08,
                   }}>
                     {plan.overview.clientName}
                   </h1>
-                  <p style={{ fontSize: 14, color: "rgba(255,255,255,0.62)", margin: 0 }}>
+                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", margin: 0, lineHeight: 1.45 }}>
                     {plan.overview.product}
                   </p>
                 </div>
 
-                <div style={{ textAlign: "right" as const, flexShrink: 0 }}>
+                <div className="hero-budget" style={{ textAlign: "right", flexShrink: 0 }}>
                   <p style={{
-                    fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.5)",
-                    margin: "0 0 5px", letterSpacing: "0.08em", textTransform: "uppercase" as const,
+                    fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.68)",
+                    margin: "0 0 6px", letterSpacing: "0.12em", textTransform: "uppercase",
                   }}>
-                    {plan.overview.dailyBudget ? "Invest. Diário" : "Orçamento Total"}
+                    {plan.overview.dailyBudget ? "Invest. Diário" : "Orçamento"}
                   </p>
                   <p style={{
-                    fontSize: 30, fontWeight: 800, color: "white",
-                    margin: 0, letterSpacing: "-0.04em", lineHeight: 1.1,
+                    fontSize: 34, fontWeight: 800, color: "white",
+                    margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
                   }}>
                     {plan.overview.dailyBudget || plan.overview.totalBudget}
@@ -389,17 +510,15 @@ export default function ResultadoPage() {
                 </div>
               </div>
 
-              {/* Tags */}
-              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginTop: 20 }}>
-                {[
-                  `🎯 ${plan.overview.objective}`,
-                  `📅 ${plan.overview.duration}`,
-                  ...plan.overview.platforms,
-                ].map((tag, i) => (
+              {/* Chips da campanha */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 22, position: "relative" }}>
+                {[plan.overview.objective, plan.overview.duration, ...plan.overview.platforms].map((tag, i) => (
                   <span key={i} style={{
-                    fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.9)",
-                    background: "rgba(255,255,255,0.13)", padding: "4px 12px",
-                    borderRadius: 6, backdropFilter: "blur(4px)",
+                    fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.95)",
+                    background: "rgba(255,255,255,0.16)",
+                    border: "1px solid rgba(255,255,255,0.22)",
+                    padding: "4px 12px", borderRadius: 999,
+                    backdropFilter: "blur(6px)",
                   }}>
                     {tag}
                   </span>
@@ -408,207 +527,204 @@ export default function ResultadoPage() {
             </div>
 
             {/* Summary */}
-            <div style={{ padding: "22px 32px 0" }}>
-              <p style={{ fontSize: 14, color: "#5a6478", lineHeight: 1.75, margin: 0, maxWidth: 680 }}>
+            <div style={{ padding: "24px 36px 2px" }}>
+              <p style={{
+                fontSize: 14.5, color: C.subtext, lineHeight: 1.72, margin: 0, maxWidth: 720,
+              }}>
                 {plan.overview.summary}
               </p>
             </div>
 
             {/* Stats strip */}
-            <div style={{ display: "flex", borderTop: "1px solid #e4e8ef", marginTop: 22 }}>
+            <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, marginTop: 24 }}>
               {stats.map((s, i) => (
                 <div
                   key={i}
                   className="stat-cell"
                   style={s.accent ? {
-                    background: "linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.01) 100%)",
-                    borderTop: "2px solid #f59e0b",
-                    marginTop: -1,
-                    position: "relative",
+                    background: "linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.01) 100%)",
                   } : undefined}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 6 }}>
-                    <span style={{
-                      fontSize: 14,
-                      color: s.accent ? "#f59e0b" : "#c5ccd6",
-                      lineHeight: 1,
-                    }}>
-                      {s.icon}
-                    </span>
-                    <p style={{
-                      fontSize: 28, fontWeight: 800,
-                      color: s.accent ? "#c77600" : "#0d1117",
-                      margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
-                      fontVariantNumeric: "tabular-nums",
-                    }}>
-                      {s.value}
-                    </p>
-                  </div>
                   <p style={{
-                    fontSize: 11,
-                    color: s.accent ? "#a36300" : "#9ba8bb",
-                    margin: 0,
-                    fontWeight: s.accent ? 700 : 500,
-                    letterSpacing: s.accent ? "0.04em" : 0,
-                    textTransform: s.accent ? "uppercase" as const : undefined,
+                    fontSize: 30, fontWeight: 800,
+                    color: s.accent ? C.accent : C.text,
+                    margin: "0 0 4px", letterSpacing: "-0.05em", lineHeight: 1,
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {s.value}
+                  </p>
+                  <p style={{
+                    fontSize: 10.5, fontWeight: 700,
+                    color: s.accent ? C.accent : C.muted,
+                    margin: 0, letterSpacing: "0.09em", textTransform: "uppercase",
                   }}>
                     {s.label}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* ═══════════════════════════════════════
-              BUDGET DISTRIBUTION
-          ═══════════════════════════════════════ */}
-          <section className="rise rise-1" style={{ marginBottom: 24 }}>
-            <Heading title="Distribuição de Orçamento" label="Investimento" />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {/* ═════ ORÇAMENTO ═════ */}
+          <section className="rise d-1" style={{ marginBottom: 32 }}>
+            <SectionTitle
+              eyebrow="Investimento"
+              title="Distribuição de Orçamento"
+              subtitle="Como o valor total é alocado entre as plataformas selecionadas"
+            />
+            <div className="budget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {plan.budgetDistribution.map((b, i) => {
                 const c = pc(b.platform);
+                const relW = (b.percentage / maxBudgetPct) * 100;
                 return (
-                  <div key={i} className="budget-card">
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <div key={i} className="card card-hover" style={{ padding: "20px 22px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 14 }}>
                       <div style={{
-                        width: 38, height: 38, background: "#fff", borderRadius: 10,
+                        width: 42, height: 42, background: C.surface, borderRadius: 11,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0, border: `1px solid #e4e8ef`,
-                        boxShadow: "0 1px 2px rgba(13,17,23,0.04)",
+                        flexShrink: 0, border: `1px solid ${C.border}`,
+                        boxShadow: "0 1px 3px rgba(13,17,23,0.05)",
                       }}>
-                        <PlatformLogo platform={b.platform} size={22} />
+                        <PlatformLogo platform={b.platform} size={24} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: "#0d1117", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                        <p style={{
+                          fontSize: 14, fontWeight: 700, color: C.text, margin: 0,
+                          letterSpacing: "-0.015em",
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
                           {b.platform}
                         </p>
-                        <p style={{ fontSize: 11, color: "#9ba8bb", margin: "2px 0 0" }}>
-                          {b.percentage}% do orçamento
+                        <p style={{ fontSize: 11.5, color: C.muted, margin: "2px 0 0" }}>
+                          {b.percentage}% do orçamento total
                         </p>
                       </div>
                       <p style={{
-                        fontSize: 17, fontWeight: 800, color: c.color,
-                        margin: 0, flexShrink: 0, letterSpacing: "-0.03em",
+                        fontSize: 20, fontWeight: 800, color: c.color,
+                        margin: 0, flexShrink: 0, letterSpacing: "-0.04em",
                         fontVariantNumeric: "tabular-nums",
                       }}>
                         {b.amount}
                       </p>
                     </div>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${b.percentage}%`, background: c.color }} />
+                      <div className="bar-fill" style={{ width: `${relW}%`, color: c.color }} />
                     </div>
-                    <p style={{ fontSize: 11.5, color: "#8994a6", lineHeight: 1.55, margin: "10px 0 0" }}>
-                      {b.allocation}
-                    </p>
+                    {b.allocation && (
+                      <p style={{ fontSize: 12, color: C.subtext, lineHeight: 1.6, margin: "12px 0 0" }}>
+                        {b.allocation}
+                      </p>
+                    )}
                   </div>
                 );
               })}
             </div>
           </section>
 
-          {/* ═══════════════════════════════════════
-              CAMPAIGNS
-          ═══════════════════════════════════════ */}
-          <section className="rise rise-2" style={{ marginBottom: 24 }}>
-            <Heading title="Estrutura de Campanhas" label="Organização" />
+          {/* ═════ ESTRUTURA DE CAMPANHAS ═════ */}
+          <section className="rise d-2" style={{ marginBottom: 32 }}>
+            <SectionTitle
+              eyebrow="Organização"
+              title="Estrutura de Campanhas"
+              subtitle="Hierarquia completa: campanhas → conjuntos → anúncios"
+            />
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* Google Ads Config card */}
               {plan.googleAdsConfig && (() => {
                 const g = plan.googleAdsConfig!;
                 const gcolor = "#EA4335";
                 const rows: { label: string; value?: string }[] = [
-                  { label: "Idioma",                value: g.language },
-                  { label: "Palavras-chave",        value: g.keywords },
-                  { label: "Kw negativas",          value: g.negativeKeywords },
-                  { label: "URL destino",           value: g.finalUrl },
-                  { label: "Sinais de público",     value: g.audienceSignals },
-                  { label: "Categorias",            value: g.shoppingCategories },
-                  { label: "Vídeo YouTube",         value: g.youtubeVideoUrl },
-                  { label: "Formato vídeo",         value: g.videoFormat },
-                  { label: "Formato Demand Gen",    value: g.demandGenFormat },
+                  { label: "Idioma",              value: g.language },
+                  { label: "Palavras-chave",      value: g.keywords },
+                  { label: "Kw negativas",        value: g.negativeKeywords },
+                  { label: "URL destino",         value: g.finalUrl },
+                  { label: "Sinais de público",   value: g.audienceSignals },
+                  { label: "Categorias",          value: g.shoppingCategories },
+                  { label: "Vídeo YouTube",       value: g.youtubeVideoUrl },
+                  { label: "Formato vídeo",       value: g.videoFormat },
+                  { label: "Formato Demand Gen",  value: g.demandGenFormat },
                 ].filter(r => !!r.value);
                 return (
-                  <div className="card" style={{
-                    overflow: "hidden",
-                    borderLeft: `4px solid ${gcolor}`,
-                  }}>
+                  <div className="card" style={{ overflow: "hidden", borderLeft: `3px solid ${gcolor}` }}>
                     <div style={{
                       padding: "14px 22px",
                       background: `${gcolor}08`,
-                      borderBottom: "1px solid #e4e8ef",
+                      borderBottom: `1px solid ${C.border}`,
                       display: "flex", alignItems: "center", gap: 12,
                     }}>
                       <div style={{
-                        width: 34, height: 34, borderRadius: 9,
+                        width: 36, height: 36, borderRadius: 10,
                         background: `${gcolor}16`,
-                        border: `1px solid ${gcolor}22`,
+                        border: `1px solid ${gcolor}26`,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 15, fontWeight: 800, color: gcolor,
-                      }}>G</div>
+                      }}>
+                        G
+                      </div>
                       <div style={{ flex: 1 }}>
                         <div style={{
-                          fontSize: 10, fontWeight: 800, letterSpacing: "0.1em",
-                          color: gcolor, textTransform: "uppercase" as const,
+                          fontSize: 10.5, fontWeight: 800, letterSpacing: "0.12em",
+                          color: gcolor, textTransform: "uppercase",
                         }}>
                           Configuração Google Ads
                         </div>
                         <div style={{
-                          fontSize: 15, fontWeight: 700, color: "#0d1117",
-                          marginTop: 2, letterSpacing: "-0.015em",
+                          fontSize: 15, fontWeight: 700, color: C.text,
+                          marginTop: 3, letterSpacing: "-0.018em",
                         }}>
                           {g.campaignType}
                         </div>
                       </div>
                     </div>
-                    <div style={{ padding: "14px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ padding: "16px 22px", display: "flex", flexDirection: "column", gap: 11 }}>
                       {rows.map((row, i) => (
                         <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                           <span style={{
-                            fontSize: 10, fontWeight: 700, color: "#9ba8bb",
-                            letterSpacing: "0.08em", width: 130, flexShrink: 0,
-                            textTransform: "uppercase" as const, paddingTop: 3,
+                            fontSize: 10, fontWeight: 800, color: C.muted,
+                            letterSpacing: "0.09em", width: 140, flexShrink: 0,
+                            textTransform: "uppercase", paddingTop: 3,
                           }}>
                             {row.label}
                           </span>
                           <span style={{
-                            fontSize: 13, color: "#0d1117", flex: 1, lineHeight: 1.55,
-                            wordBreak: "break-word" as const,
+                            fontSize: 13, color: C.text, flex: 1, lineHeight: 1.6, wordBreak: "break-word",
                           }}>
                             {row.value}
                           </span>
                         </div>
                       ))}
-                      {rows.length === 0 && (
-                        <span style={{ fontSize: 12, color: "#9ba8bb", fontStyle: "italic" as const }}>
-                          Sem detalhes adicionais informados.
-                        </span>
-                      )}
                     </div>
                   </div>
                 );
               })()}
+
+              {/* Campaigns */}
               {plan.campaigns.map((campaign, ci) => {
                 const c = pc(campaign.platform);
                 const campaignLabels = getHierarchyLabels(campaign.platform, campaign.googleCampaignType);
                 return (
                   <div key={ci} className="card" style={{ overflow: "hidden" }}>
 
-                    {/* Campaign header */}
+                    {/* Header campanha */}
                     <div style={{
-                      padding: "16px 24px",
-                      borderBottom: "1px solid #e4e8ef",
-                      borderLeft: `4px solid ${c.color}`,
-                      background: `linear-gradient(90deg, ${c.color}06 0%, transparent 55%)`,
-                      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                      padding: "18px 24px",
+                      borderBottom: `1px solid ${C.border}`,
+                      borderLeft: `3px solid ${c.color}`,
+                      background: `linear-gradient(90deg, ${c.color}08 0%, transparent 55%)`,
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      gap: 16, flexWrap: "wrap",
                     }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6, flexWrap: "wrap" }}>
                           <span style={{
+                            display: "inline-flex", alignItems: "center", gap: 6,
                             fontSize: 11, fontWeight: 700, letterSpacing: "0.01em",
                             color: c.color, background: c.bg,
-                            padding: "3px 9px", borderRadius: 5,
+                            padding: "3px 10px", borderRadius: 5,
                             border: `1px solid ${c.color}22`,
-                            whiteSpace: "nowrap" as const, flexShrink: 0,
-                            display: "inline-flex", alignItems: "center", gap: 6,
+                            whiteSpace: "nowrap", flexShrink: 0,
                           }}>
                             <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
                               {platformsToDisplay(campaign.platform, plan.overview.platforms).map(plt => (
@@ -617,57 +733,66 @@ export default function ResultadoPage() {
                             </span>
                             {platformLabel(campaign.platform, plan.overview.platforms)}
                           </span>
+                          {campaign.googleCampaignType && (
+                            <Chip label={campaign.googleCampaignType} color={c.color} bg={c.bg} />
+                          )}
                           {campaign.objective && (
-                            <span style={{ fontSize: 12, color: "#9ba8bb" }}>{campaign.objective}</span>
+                            <span style={{ fontSize: 12, color: C.muted }}>· {campaign.objective}</span>
                           )}
                         </div>
                         <h3 style={{
-                          fontSize: 14, fontWeight: 700, color: "#0d1117",
-                          margin: 0, letterSpacing: "-0.018em",
-                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
+                          fontSize: 16, fontWeight: 700, color: C.text,
+                          margin: 0, letterSpacing: "-0.02em", lineHeight: 1.3,
                         }}>
                           {campaign.name}
                         </h3>
                       </div>
                       {campaign.totalBudget && campaign.totalBudget !== "A definir" && (
-                        <span style={{
-                          fontSize: 17, fontWeight: 800, color: c.color,
-                          flexShrink: 0, letterSpacing: "-0.03em",
-                          fontVariantNumeric: "tabular-nums",
-                        }}>
-                          {campaign.totalBudget}
-                        </span>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <p style={{ fontSize: 10, fontWeight: 700, color: C.muted, margin: "0 0 2px", letterSpacing: "0.09em", textTransform: "uppercase" }}>
+                            Orçamento
+                          </p>
+                          <p style={{
+                            fontSize: 19, fontWeight: 800, color: c.color,
+                            margin: 0, letterSpacing: "-0.035em", lineHeight: 1,
+                            fontVariantNumeric: "tabular-nums",
+                          }}>
+                            {campaign.totalBudget}
+                          </p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Adsets */}
+                    {/* AdSets */}
                     <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
                       {campaign.adSets.map((adSet, j) => (
                         <div key={j} className="adset-card">
 
-                          {/* Adset header */}
+                          {/* Header adset */}
                           <div style={{
-                            display: "flex", alignItems: "center",
-                            justifyContent: "space-between", gap: 12,
-                            padding: "11px 16px", borderBottom: "1px solid #eaecf2",
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
+                            gap: 12, padding: "12px 16px",
+                            borderBottom: `1px solid ${C.borderMid}`, background: C.surface,
                           }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, minWidth: 0 }}>
                               <div style={{
-                                width: 26, height: 26, borderRadius: 7,
+                                width: 28, height: 28, borderRadius: 8,
                                 background: c.color, flexShrink: 0,
                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                fontSize: 11, fontWeight: 800, color: "white",
+                                fontSize: 12, fontWeight: 800, color: "white",
+                                fontVariantNumeric: "tabular-nums",
                               }}>
                                 {j + 1}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <p style={{
-                                  fontSize: 13, fontWeight: 700, color: "#0d1117",
-                                  margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
+                                  fontSize: 13.5, fontWeight: 700, color: C.text,
+                                  margin: 0, letterSpacing: "-0.015em",
+                                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                                 }}>
                                   {adSet.name || `${campaignLabels.adSet} ${j + 1}`}
                                 </p>
-                                <p style={{ fontSize: 11, color: "#9ba8bb", margin: "2px 0 0" }}>
+                                <p style={{ fontSize: 11.5, color: C.muted, margin: "2px 0 0" }}>
                                   {campaignLabels.hasManualAds
                                     ? `${adSet.ads.length} ${(adSet.ads.length === 1 ? campaignLabels.ad : campaignLabels.adPlural).toLowerCase()}${adSet.ads.length > 0 ? ` · ${[...new Set(adSet.ads.map(a => a.format))].join(", ")}` : ""}`
                                     : "Filtro de feed · sem anúncios manuais"}
@@ -677,83 +802,74 @@ export default function ResultadoPage() {
                             {adSet.budget && (
                               <span style={{
                                 fontSize: 12, fontWeight: 700, color: c.color,
-                                background: c.bg, padding: "4px 12px", borderRadius: 6,
-                                border: `1px solid ${c.color}20`, flexShrink: 0,
+                                background: c.bg, padding: "5px 12px", borderRadius: 7,
+                                border: `1px solid ${c.color}22`, flexShrink: 0,
                               }}>
                                 {adSet.budget}/dia
                               </span>
                             )}
                           </div>
 
-                          {/* Adset body */}
+                          {/* Body adset */}
                           <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-                            {adSet.audience && <AudienceRow audience={adSet.audience} color={c.color} />}
+                            {adSet.audience && (
+                              <AudienceBlock audience={adSet.audience} color={c.color} label={campaignLabels.audienceLabel} />
+                            )}
 
                             {campaignLabels.hasManualAds && adSet.ads.map((ad, k) => (
                               <div key={k} className="ad-item">
                                 <div style={{
-                                  display: "flex", alignItems: "center",
-                                  justifyContent: "space-between",
+                                  display: "flex", alignItems: "center", justifyContent: "space-between",
                                   marginBottom: (ad.copy || ad.fileDataUrl || ad.fileName) ? 10 : 0,
                                 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                                     <span style={{
                                       fontSize: 10, fontWeight: 700, color: c.color,
-                                      background: c.bg, padding: "2px 8px", borderRadius: 4,
+                                      background: c.bg, padding: "2.5px 8px", borderRadius: 4,
                                       letterSpacing: "0.02em",
                                     }}>
                                       {ad.format}
                                     </span>
-                                    <span style={{ fontSize: 12, fontWeight: 600, color: "#5a6478" }}>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: C.subtext }}>
                                       {ad.name || `${campaignLabels.ad} ${k + 1}`}
                                     </span>
                                   </div>
                                   {ad.copy && <CopyBtn text={cleanCopy(ad.copy)} />}
                                 </div>
 
-                                {/* Image (50%) ao lado da copy */}
+                                {/* Imagem + copy */}
                                 {((ad.fileDataUrl && ad.fileType === "image") || ad.copy) && (
-                                  <div style={{
-                                    display: "flex",
-                                    gap: 14,
-                                    alignItems: "flex-start",
-                                    flexWrap: "wrap" as const,
-                                  }}>
+                                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
                                     {ad.fileDataUrl && ad.fileType === "image" && (
                                       <div style={{
-                                        flex: "0 1 50%",
-                                        minWidth: 140,
+                                        flex: "0 1 50%", minWidth: 140,
                                         maxWidth: ad.copy ? "50%" : "100%",
                                       }}>
                                         <img
                                           src={ad.fileDataUrl}
                                           alt={ad.fileName ?? ad.name}
-                                          style={{ width: "100%", height: "auto", borderRadius: 8, display: "block", border: "1px solid #e4e8ef" }}
+                                          style={{
+                                            width: "100%", height: "auto",
+                                            borderRadius: 8, display: "block",
+                                            border: `1px solid ${C.border}`,
+                                          }}
                                         />
                                       </div>
                                     )}
                                     {ad.copy && (
                                       <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 8 }}>
                                         <p style={{
-                                          fontSize: 13,
-                                          color: "#5a6478",
-                                          lineHeight: 1.72,
-                                          margin: 0,
-                                          whiteSpace: "pre-wrap" as const,
+                                          fontSize: 13, color: C.subtext,
+                                          lineHeight: 1.72, margin: 0, whiteSpace: "pre-wrap",
                                         }}>
                                           {cleanCopy(ad.copy)}
                                         </p>
                                         {extractPostDate(ad.copy) && (
                                           <span style={{
                                             alignSelf: "flex-start",
-                                            fontSize: 11,
-                                            fontWeight: 500,
-                                            color: "#9ba8bb",
-                                            background: "#f6f8fa",
-                                            border: "1px solid #e4e8ef",
-                                            padding: "3px 9px",
-                                            borderRadius: 999,
-                                            letterSpacing: "0.01em",
+                                            fontSize: 11, fontWeight: 500, color: C.muted,
+                                            background: C.bg, border: `1px solid ${C.border}`,
+                                            padding: "3px 10px", borderRadius: 999,
                                           }}>
                                             📅 Publicado em {extractPostDate(ad.copy)}
                                           </span>
@@ -766,25 +882,28 @@ export default function ResultadoPage() {
                                 {ad.fileName && ad.fileType === "video" && (
                                   <div style={{
                                     display: "flex", alignItems: "center", gap: 8, marginTop: 8,
-                                    background: "#f6f8fa", borderRadius: 7, padding: "8px 11px",
-                                    border: "1px solid #e4e8ef",
+                                    background: C.bg, borderRadius: 7, padding: "8px 11px",
+                                    border: `1px solid ${C.border}`,
                                   }}>
                                     <span style={{ fontSize: 16 }}>🎬</span>
-                                    <span style={{ fontSize: 12, color: "#9ba8bb" }}>{ad.fileName}</span>
+                                    <span style={{ fontSize: 12, color: C.muted }}>{ad.fileName}</span>
                                   </div>
                                 )}
                               </div>
                             ))}
+
                             {!campaignLabels.hasManualAds && (
                               <div style={{
-                                background:"rgba(234,67,53,0.05)", borderRadius:8,
-                                border:"1px dashed rgba(234,67,53,0.22)",
-                                padding:"10px 14px", display:"flex", gap:10, alignItems:"flex-start",
+                                background: "rgba(234,67,53,0.05)", borderRadius: 8,
+                                border: "1px dashed rgba(234,67,53,0.25)",
+                                padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start",
                               }}>
-                                <span style={{ fontSize:15 }}>{campaign.googleCampaignType === "Performance Max" ? "⚡" : "🛍️"}</span>
-                                <p style={{ fontSize:12, color:"#5a6478", margin:0, lineHeight:1.55 }}>
+                                <span style={{ fontSize: 16 }}>
+                                  {campaign.googleCampaignType === "Performance Max" ? "⚡" : "🛍️"}
+                                </span>
+                                <p style={{ fontSize: 12.5, color: C.subtext, margin: 0, lineHeight: 1.6 }}>
                                   {campaign.googleCampaignType === "Performance Max"
-                                    ? "Grupo de Recursos — contém títulos, descrições, imagens, vídeos e sinais de público. Google monta os criativos automaticamente."
+                                    ? "Grupo de Recursos — contém títulos, descrições, imagens, vídeos e sinais de público. O Google monta os criativos automaticamente."
                                     : "Sem anúncios manuais — criativos gerados a partir do feed do Merchant Center, filtrados por este grupo."}
                                 </p>
                               </div>
@@ -799,62 +918,65 @@ export default function ResultadoPage() {
             </div>
           </section>
 
-          {/* ═══════════════════════════════════════
-              TIMELINE
-          ═══════════════════════════════════════ */}
-          <section className="rise rise-3">
-            <Heading title="Cronograma de Implementação" label="Timeline" />
-            <div className="card" style={{ padding: "28px 32px" }}>
-              <div style={{ position: "relative", paddingLeft: 52 }}>
-
-                {/* Vertical gradient line */}
+          {/* ═════ CRONOGRAMA ═════ */}
+          <section className="rise d-3" style={{ marginBottom: 32 }}>
+            <SectionTitle
+              eyebrow="Timeline"
+              title="Cronograma de Implementação"
+              subtitle="Fases ordenadas de execução, do briefing ao otimização"
+            />
+            <div className="card" style={{ padding: "32px 36px" }}>
+              <div style={{ position: "relative", paddingLeft: 54 }}>
+                {/* Linha vertical gradiente */}
                 <div style={{
-                  position: "absolute", left: 13, top: 14, bottom: 14,
+                  position: "absolute", left: 14, top: 16, bottom: 16,
                   width: 2, borderRadius: 2,
-                  background: "linear-gradient(to bottom, #0071E3, #16a34a)",
-                  opacity: 0.18,
+                  background: `linear-gradient(to bottom, ${C.brand}, ${C.accent})`,
+                  opacity: 0.22,
                 }} />
 
                 {plan.timeline.map((phase, i) => {
                   const isFirst = i === 0;
                   const isLast  = i === plan.timeline.length - 1;
-                  const accent  = isFirst ? "#0071E3" : isLast ? "#16a34a" : "#c8d0db";
-                  const nodeBg  = isFirst ? "#0071E3" : isLast ? "#16a34a" : "white";
-                  const nodeClr = isFirst || isLast ? "white" : "#9ba8bb";
-                  const pillBg  = isFirst ? "#EBF5FF" : isLast ? "#dcfce7" : "#f3f5f8";
-                  const pillClr = isFirst ? "#0071E3" : isLast ? "#16a34a" : "#8994a6";
+                  const accent  = isFirst ? C.brand : isLast ? C.accent : C.soft;
+                  const nodeBg  = isFirst ? C.brand : isLast ? C.accent : C.surface;
+                  const nodeClr = isFirst || isLast ? "white" : C.muted;
+                  const pillBg  = isFirst ? C.brandSoft : isLast ? C.accentBg : C.bg;
+                  const pillClr = isFirst ? C.brand : isLast ? C.accent : C.subtext;
 
                   return (
-                    <div key={i} style={{ position: "relative", marginBottom: i < plan.timeline.length - 1 ? 28 : 0 }}>
-                      {/* Node */}
+                    <div key={i} style={{ position: "relative", marginBottom: i < plan.timeline.length - 1 ? 30 : 0 }}>
                       <div className="tl-node" style={{
                         background: nodeBg, color: nodeClr,
                         border: `2px solid ${accent}`,
-                        boxShadow: isFirst || isLast ? `0 0 0 4px ${accent}18` : "none",
+                        boxShadow: isFirst || isLast ? `0 0 0 4px ${accent}20` : "none",
                       }}>
                         {i + 1}
                       </div>
 
-                      {/* Phase row */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <h3 style={{ fontSize: 14, fontWeight: 700, color: "#0d1117", margin: 0, letterSpacing: "-0.02em" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0, letterSpacing: "-0.022em" }}>
                           {phase.phase}
                         </h3>
                         <span style={{
-                          fontSize: 11, fontWeight: 600, color: pillClr,
-                          background: pillBg, padding: "3px 10px", borderRadius: 6,
+                          fontSize: 11.5, fontWeight: 700, color: pillClr,
+                          background: pillBg, padding: "3px 11px", borderRadius: 7,
+                          border: `1px solid ${pillClr}22`,
                         }}>
                           {phase.duration}
                         </span>
                       </div>
 
-                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+                      <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
                         {phase.actions.map((action, j) => (
-                          <li key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#5a6478", lineHeight: 1.65 }}>
+                          <li key={j} style={{
+                            display: "flex", alignItems: "flex-start", gap: 9,
+                            fontSize: 13.5, color: C.subtext, lineHeight: 1.65,
+                          }}>
                             <span style={{
-                              width: 5, height: 5, borderRadius: "50%",
+                              width: 6, height: 6, borderRadius: "50%",
                               background: accent, flexShrink: 0,
-                              marginTop: 8, opacity: 0.55, display: "inline-block",
+                              marginTop: 8, opacity: 0.65, display: "inline-block",
                             }} />
                             {action}
                           </li>
@@ -866,6 +988,40 @@ export default function ResultadoPage() {
               </div>
             </div>
           </section>
+
+          {/* ═════ RECOMENDAÇÕES ═════ */}
+          {plan.recommendations && plan.recommendations.length > 0 && (
+            <section className="rise d-4">
+              <SectionTitle
+                eyebrow="Best Practices"
+                title="Recomendações Estratégicas"
+                subtitle="Boas práticas para potencializar resultados e maximizar ROAS"
+              />
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {plan.recommendations.map((rec, i) => (
+                  <div key={i} className="rec-card">
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8,
+                      background: C.brandSoft,
+                      border: `1px solid ${C.brand}26`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0,
+                    }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 800, color: C.brand,
+                        fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em",
+                      }}>
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 13.5, color: C.text, margin: 0, lineHeight: 1.65, flex: 1 }}>
+                      {rec}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
         </main>
       </div>
