@@ -6,6 +6,7 @@ import { getHierarchyLabels } from "@/lib/hierarchy";
 import GoogleCampaignCard from "@/components/GoogleCampaignCard";
 import KeywordChipInput from "@/components/KeywordChipInput";
 import ResponsiveSearchAdBuilder from "@/components/ResponsiveSearchAdBuilder";
+import type { RSAContext } from "@/lib/openaiClient";
 
 /* Google Ads — tipos sem upload manual de mídia */
 const GOOGLE_TEXT_ONLY_TYPES: GoogleCampaignType[] = ["Pesquisa", "Shopping", "Vídeo/YouTube"];
@@ -136,6 +137,9 @@ export interface StructurePrefill {
   budget:            string;
   budgetType:        string;
   budgetLevel:       string;
+  /** Palavras-chave do Google Ads (Pesquisa/PMax) — usadas como audience do grupo */
+  googleKeywords?:       string;
+  googleAudienceSignals?: string;
 }
 
 export function makeStructure(
@@ -149,6 +153,21 @@ export function makeStructure(
   const audienceDesc   = prefill ? buildAudienceDesc(prefill) : "";
   const objCode        = prefill ? (OBJ_CODE[prefill.objective] ?? "CAMP") : "CAMP";
   const baseName       = prefill?.campaignName?.trim() || "";
+
+  /* Para Google Ads, o "audience" do grupo é específico do tipo:
+     Pesquisa/PMax → palavras-chave | Display/Vídeo/Demand Gen → sinais de público |
+     Shopping → vazio (o feed do Merchant Center comanda). */
+  function audienceForPlatform(p: Platform, gType?: GoogleCampaignType | ""): string {
+    if (p !== "Google Ads") return audienceDesc;
+    if (!gType) return "";
+    if (gType === "Pesquisa" || gType === "Performance Max") {
+      return prefill?.googleKeywords?.trim() || "";
+    }
+    if (gType === "Display" || gType === "Vídeo/YouTube" || gType === "Demand Gen") {
+      return prefill?.googleAudienceSignals?.trim() || "";
+    }
+    return ""; // Shopping: sem prefill
+  }
 
   // Facebook + Instagram share one Meta campaign — deduplicate
   const hasFacebook  = platforms.includes("Facebook");
@@ -176,6 +195,7 @@ export function makeStructure(
     const platDisplay = isMeta ? "Facebook + Instagram" : platform;
 
     const gType = platform === "Google Ads" ? (googleCampaignType || undefined) : undefined;
+    const audienceForThis = audienceForPlatform(platform, gType);
     return Array.from({ length: campaignsPerPlatform }, (_, ci) => {
       const suffix = campaignsPerPlatform > 1 ? ` ${ci + 1}` : "";
       const name = baseName
@@ -188,7 +208,7 @@ export function makeStructure(
         googleCampaignType: gType as GoogleCampaignType | undefined,
         totalBudget: campaignBudget,
         adSets: Array.from({ length: adSets }, (__, asi) =>
-          makeAdSetPrefilled(ads, audienceDesc, asi, adsetBudget, platform, gType)
+          makeAdSetPrefilled(ads, audienceForThis, asi, adsetBudget, platform, gType)
         ),
       };
     });
@@ -559,8 +579,14 @@ function BudgetInput({ value, placeholder, color, onChange }: {
 }
 
 /* ── Ad card ── */
-function AdCard({ ad, platform, googleCampaignType, onUpdate }: {
-  ad: AdInput; platform: Platform; googleCampaignType?: GoogleCampaignType | ""; onUpdate:(u:Partial<AdInput>)=>void;
+function AdCard({ ad, platform, googleCampaignType, aiContext, adSetAudience, onUpdate }: {
+  ad: AdInput;
+  platform: Platform;
+  googleCampaignType?: GoogleCampaignType | "";
+  aiContext?: RSAContext;
+  /** Palavras-chave do grupo (audience) — usadas como contexto do RSA */
+  adSetAudience?: string;
+  onUpdate:(u:Partial<AdInput>)=>void;
 }) {
   const cfg = PLATFORM_CONFIG[platform];
 
@@ -643,6 +669,7 @@ function AdCard({ ad, platform, googleCampaignType, onUpdate }: {
             <ResponsiveSearchAdBuilder
               value={ad.copy}
               onChange={v => onUpdate({ copy: v })}
+              context={aiContext ? { ...aiContext, keywords: adSetAudience || aiContext.keywords } : undefined}
             />
           ) : (
             <SbInput value={ad.copy} placeholder={copyPlaceholder}
@@ -772,9 +799,11 @@ interface Props {
   budgetLevel:        BudgetLevel;
   googleCampaignType?: GoogleCampaignType | "";
   onChange:           (c:CampaignInput[])=>void;
+  /** Contexto para geração de RSA com IA (cliente, produto, keywords, etc.) */
+  aiContext?:         RSAContext;
 }
 
-export default function StructureBuilder({ campaigns, budgetLevel, googleCampaignType, onChange }: Props) {
+export default function StructureBuilder({ campaigns, budgetLevel, googleCampaignType, onChange, aiContext }: Props) {
   function updC(cIdx:number, u:Partial<CampaignInput>) {
     onChange(campaigns.map((c,i)=>i===cIdx?{...c,...u}:c));
   }
@@ -957,6 +986,8 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
                               ad={ad}
                               platform={campaign.platform}
                               googleCampaignType={gType}
+                              aiContext={aiContext}
+                              adSetAudience={adSet.audience}
                               onUpdate={u=>updAd(cIdx,asIdx,adIdx,u)}
                             />
                           </div>

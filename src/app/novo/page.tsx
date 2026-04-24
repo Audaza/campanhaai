@@ -349,18 +349,20 @@ export default function Home() {
       setError(""); setDir("fwd");
       setForm(p => {
         const prefill: StructurePrefill = {
-          campaignName:      p.campaignName,
-          objective:         p.objective,
-          ageMin:            p.ageMin,
-          ageMax:            p.ageMax,
-          gender:            p.gender,
-          location:          p.location,
-          audienceType:      p.audienceType,
-          interests:         p.interests,
-          remarketingSource: p.remarketingSource,
-          budget:            p.budget,
-          budgetType:        p.budgetType,
-          budgetLevel:       p.budgetLevel,
+          campaignName:          p.campaignName,
+          objective:             p.objective,
+          ageMin:                p.ageMin,
+          ageMax:                p.ageMax,
+          gender:                p.gender,
+          location:              p.location,
+          audienceType:          p.audienceType,
+          interests:             p.interests,
+          remarketingSource:     p.remarketingSource,
+          budget:                p.budget,
+          budgetType:            p.budgetType,
+          budgetLevel:           p.budgetLevel,
+          googleKeywords:        p.googleKeywords,
+          googleAudienceSignals: p.googleAudienceSignals,
         };
         return {
           ...p,
@@ -1351,6 +1353,16 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     budgetLevel={form.budgetLevel}
                     googleCampaignType={form.googleCampaignType}
                     onChange={v=>set("campaignInputs",v)}
+                    aiContext={{
+                      clientName: form.clientName,
+                      product:    form.product,
+                      objective:  form.objective,
+                      keywords:   form.googleKeywords,
+                      negatives:  form.googleNegativeKeywords,
+                      finalUrl:   form.googleFinalUrl,
+                      location:   form.location,
+                      language:   form.googleLanguage,
+                    }}
                   />
                 </div>
               )}

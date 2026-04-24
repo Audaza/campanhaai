@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { generateRSASuggestions, type RSAContext } from "@/lib/openaiClient";
 
 /* ═══════════════════════════════════════════════════════
    ResponsiveSearchAdBuilder
@@ -12,6 +13,9 @@ import { useEffect, useRef, useState } from "react";
      Descrições: d1 | d2
 
    Google: 3–15 títulos · 2–4 descrições.
+
+   Se `context` é fornecido, mostra botão "Gerar com IA" que
+   cria títulos e descrições otimizados pelo OpenAI GPT-4o.
 ═══════════════════════════════════════════════════════ */
 
 const MAX_TITLE_LEN = 30;
@@ -20,10 +24,12 @@ const MIN_TITLES = 3, MAX_TITLES = 15;
 const MIN_DESCS  = 2, MAX_DESCS  = 4;
 
 const RED = "#EA4335";
+const BLUE = "#0071E3";
 
 type Props = {
   value: string;
   onChange: (v: string) => void;
+  context?: RSAContext;
 };
 
 function parseRSA(raw: string): { titles: string[]; descriptions: string[] } {
@@ -145,7 +151,10 @@ function Row({
   );
 }
 
-export default function ResponsiveSearchAdBuilder({ value, onChange }: Props) {
+export default function ResponsiveSearchAdBuilder({ value, onChange, context }: Props) {
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
   /* Estado interno: arrays. Parse inicial do value;
      re-sincroniza se a prop mudar por fora (ex: reset). */
   const initial = parseRSA(value);
@@ -199,12 +208,85 @@ export default function ResponsiveSearchAdBuilder({ value, onChange }: Props) {
     setDescs(prev => prev.filter((_, idx) => idx !== i));
   }
 
+  async function runAI() {
+    if (!context) return;
+    setAiLoading(true); setAiError("");
+    try {
+      const r = await generateRSASuggestions(context);
+      if (r.titles.length) setTitles(r.titles);
+      if (r.descriptions.length) setDescs(r.descriptions);
+    } catch {
+      setAiError("Não foi possível gerar. Tente novamente.");
+      setTimeout(() => setAiError(""), 3500);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  const hasAI = !!context && (!!context.product || !!context.clientName);
+
   return (
     <div style={{
       background: "var(--surface-2)", borderRadius: 10,
       border: "1px solid var(--border-mid)",
       padding: "14px 14px 12px",
     }}>
+      {/* Header com botão de IA */}
+      {hasAI && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "10px 12px", marginBottom: 14,
+          background: `linear-gradient(135deg, ${BLUE}0d 0%, ${BLUE}05 100%)`,
+          border: `1px solid ${BLUE}33`, borderRadius: 8,
+        }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: 7,
+            background: `linear-gradient(135deg, ${BLUE}, #34aadc)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0, boxShadow: `0 2px 6px ${BLUE}40`,
+          }}>
+            <span style={{ fontSize: 14 }}>✨</span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text)", margin: 0, letterSpacing: "-0.01em" }}>
+              Gerar com IA
+            </p>
+            <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0", lineHeight: 1.45 }}>
+              {aiError
+                ? <span style={{ color: "#dc2626" }}>{aiError}</span>
+                : "10 títulos + 4 descrições otimizados usando o contexto da campanha"}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={runAI}
+            disabled={aiLoading}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              fontSize: 12.5, fontWeight: 700, color: "white",
+              background: aiLoading ? "var(--muted)" : BLUE,
+              border: "none", borderRadius: 7,
+              padding: "7px 14px", cursor: aiLoading ? "wait" : "pointer",
+              fontFamily: "inherit", flexShrink: 0,
+              boxShadow: aiLoading ? "none" : `0 2px 6px ${BLUE}55`,
+              transition: "all 0.15s",
+            }}
+          >
+            {aiLoading ? (
+              <>
+                <svg style={{ width: 12, height: 12, animation: "spin 0.8s linear infinite" }} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.3" />
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Gerando…
+              </>
+            ) : (
+              <>Gerar com IA</>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Títulos */}
       <div style={{
         display: "flex", alignItems: "baseline", gap: 8,
