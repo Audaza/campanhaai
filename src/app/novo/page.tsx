@@ -562,7 +562,15 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
             Campanha Tráfego | Audaza
           </span>
         </div>
-        <span style={{ width:72 }} />
+        <span style={{
+          fontSize: 10, fontWeight: 700, color: "#16a34a",
+          background: "#dcfce7", border: "1px solid #86efac",
+          padding: "3px 8px", borderRadius: 999,
+          letterSpacing: "0.04em",
+          fontVariantNumeric: "tabular-nums",
+        }}>
+          v2.3 · RSA + IA
+        </span>
       </header>
 
       <main style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"44px 20px 72px" }}>
