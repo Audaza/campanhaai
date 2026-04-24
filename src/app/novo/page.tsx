@@ -11,6 +11,7 @@ import StructureBuilder, { makeStructure } from "@/components/StructureBuilder";
 import type { StructurePrefill } from "@/components/StructureBuilder";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { getHierarchyLabels } from "@/lib/hierarchy";
+import KeywordChipInput from "@/components/KeywordChipInput";
 
 /* ── Constants ── */
 
@@ -751,16 +752,25 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                   {form.platforms.includes("Google Ads") && form.googleCampaignType === "Pesquisa" && (
                     <>
                       <Field label="Palavras-chave"
-                        hint="Separe por vírgula ou uma por linha (ex: plano de saúde, seguro saúde empresarial)">
-                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
-                          placeholder="plano de saúde empresarial, convênio médico pequena empresa, cotação plano de saúde"
-                          value={form.googleKeywords} onChange={e=>set("googleKeywords", e.target.value)}/>
+                        hint="Digite cada termo e tecle Enter ou vírgula. Ex: plano de saúde empresarial, convênio PME">
+                        <KeywordChipInput
+                          value={form.googleKeywords}
+                          onChange={v => set("googleKeywords", v)}
+                          placeholder="plano de saúde empresarial"
+                          accent="#EA4335"
+                          showCount
+                        />
                       </Field>
                       <Field label="Palavras-chave negativas" optional
-                        hint="Termos que NÃO devem acionar o anúncio (ex: grátis, curso)">
-                        <textarea className="ap-input" rows={2} style={{ resize:"none" as const, lineHeight:1.6 }}
-                          placeholder="grátis, curso, emprego"
-                          value={form.googleNegativeKeywords} onChange={e=>set("googleNegativeKeywords", e.target.value)}/>
+                        hint="Termos que NÃO devem acionar o anúncio (ex: grátis, curso, emprego)">
+                        <KeywordChipInput
+                          value={form.googleNegativeKeywords}
+                          onChange={v => set("googleNegativeKeywords", v)}
+                          placeholder="grátis"
+                          accent="#dc2626"
+                          negativeMode
+                          showCount
+                        />
                       </Field>
                       <Field label="URL de destino (landing page)" optional>
                         <input className="ap-input" type="url"
@@ -835,10 +845,14 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                   {form.platforms.includes("Google Ads") && form.googleCampaignType === "Performance Max" && (
                     <>
                       <Field label="Temas e palavras-chave"
-                        hint="Principais temas, termos e ideias que representam a oferta">
-                        <textarea className="ap-input" rows={3} style={{ resize:"none" as const, lineHeight:1.6 }}
-                          placeholder="plano de saúde empresarial, convênio PME, benefícios corporativos"
-                          value={form.googleKeywords} onChange={e=>set("googleKeywords", e.target.value)}/>
+                        hint="Digite cada tema/termo e tecle Enter ou vírgula">
+                        <KeywordChipInput
+                          value={form.googleKeywords}
+                          onChange={v => set("googleKeywords", v)}
+                          placeholder="benefícios corporativos"
+                          accent="#EA4335"
+                          showCount
+                        />
                       </Field>
                       <Field label="URL de destino">
                         <input className="ap-input" type="url"

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import type { AdFormat, AdInput, AdSetInput, CampaignInput, BudgetLevel, LinkPreviewData, Platform, GoogleCampaignType } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 import GoogleCampaignCard from "@/components/GoogleCampaignCard";
+import KeywordChipInput from "@/components/KeywordChipInput";
+import ResponsiveSearchAdBuilder from "@/components/ResponsiveSearchAdBuilder";
 
 /* Google Ads — tipos sem upload manual de mídia */
 const GOOGLE_TEXT_ONLY_TYPES: GoogleCampaignType[] = ["Pesquisa", "Shopping", "Vídeo/YouTube"];
@@ -637,8 +639,15 @@ function AdCard({ ad, platform, googleCampaignType, onUpdate }: {
       {isGoogleTextOnly ? (
         <div>
           <SbLabel>{copyLabel}</SbLabel>
-          <SbInput value={ad.copy} placeholder={copyPlaceholder}
-            onChange={v=>onUpdate({copy:v})} multiline/>
+          {googleCampaignType === "Pesquisa" ? (
+            <ResponsiveSearchAdBuilder
+              value={ad.copy}
+              onChange={v => onUpdate({ copy: v })}
+            />
+          ) : (
+            <SbInput value={ad.copy} placeholder={copyPlaceholder}
+              onChange={v=>onUpdate({copy:v})} multiline/>
+          )}
           {googleCampaignType === "Vídeo/YouTube" && (
             <p style={{ fontSize:11, color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>
               → O link do vídeo foi definido no passo anterior. Descreva aqui a mensagem principal ou CTA do anúncio.
@@ -908,9 +917,19 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
 
                   <div style={{ marginBottom:12 }}>
                     <SbLabel>{audienceLabel}</SbLabel>
-                    <SbInput value={adSet.audience}
-                      placeholder={audiencePH}
-                      onChange={v=>updAs(cIdx,asIdx,{audience:v})} multiline/>
+                    {campaign.platform === "Google Ads" && gType === "Pesquisa" ? (
+                      <KeywordChipInput
+                        value={adSet.audience}
+                        onChange={v => updAs(cIdx, asIdx, { audience: v })}
+                        placeholder={audiencePH}
+                        accent="#EA4335"
+                        showCount
+                      />
+                    ) : (
+                      <SbInput value={adSet.audience}
+                        placeholder={audiencePH}
+                        onChange={v=>updAs(cIdx,asIdx,{audience:v})} multiline/>
+                    )}
                   </div>
 
                   {showManualAds ? (
