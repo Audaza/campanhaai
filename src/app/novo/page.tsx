@@ -347,7 +347,7 @@ export default function Home() {
         return {
           ...p,
           campaignInputs: makeStructure(
-            p.platforms, p.structCampaigns, p.structAdSets, p.structAds, prefill
+            p.platforms, p.structCampaigns, p.structAdSets, p.structAds, prefill, p.googleCampaignType
           ),
         };
       });
@@ -430,12 +430,13 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
       const strategic = JSON.parse(data.choices[0].message.content);
 
       const campaigns: Campaign[] = form.campaignInputs.map(ci => ({
-        name:        ci.name || `Campanha ${ci.platform}`,
-        platform:    ci.platform,
-        objective:   form.objective,
-        totalBudget: ci.totalBudget ? `R$ ${ci.totalBudget}` : "A definir",
+        name:               ci.name || `Campanha ${ci.platform}`,
+        platform:           ci.platform,
+        googleCampaignType: ci.googleCampaignType,
+        objective:          form.objective,
+        totalBudget:        ci.totalBudget ? `R$ ${ci.totalBudget}` : "A definir",
         adSets: ci.adSets.map(as => ({
-          name:     as.name     || "Conjunto",
+          name:     as.name     || "Grupo",
           audience: as.audience || "",
           budget:   as.dailyBudget ? `R$ ${as.dailyBudget}` : "",
           ads: as.ads.map(ad => ({

@@ -50,11 +50,12 @@ export interface AdSetInput {
 }
 
 export interface CampaignInput {
-  id:          string;
-  name:        string;
-  platform:    Platform;
-  totalBudget: string;
-  adSets:      AdSetInput[];
+  id:                  string;
+  name:                string;
+  platform:            Platform;
+  googleCampaignType?: GoogleCampaignType;
+  totalBudget:         string;
+  adSets:              AdSetInput[];
 }
 
 /* ── Form data (all steps) ── */
@@ -112,11 +113,12 @@ export interface AdSet {
 }
 
 export interface Campaign {
-  name:        string;
-  platform:    Platform;
-  objective:   string;
-  totalBudget: string;
-  adSets:      AdSet[];
+  name:                string;
+  platform:            Platform;
+  googleCampaignType?: GoogleCampaignType;
+  objective:           string;
+  totalBudget:         string;
+  adSets:              AdSet[];
 }
 
 export interface TimelinePhase {

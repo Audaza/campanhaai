@@ -8,6 +8,7 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { savePlan } from "@/lib/savedPlans";
+import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* Facebook + Instagram = Meta — mostra os 2 ícones juntos quando ambos estão na campanha */
 function platformsToDisplay(platform: string, all: readonly string[]): string[] {
@@ -159,14 +160,22 @@ export default function ResultadoPage() {
   );
 
   const totalAdSets = plan.campaigns.reduce((s, c) => s + c.adSets.length, 0);
-  const totalAds    = plan.campaigns.reduce((s, c) => s + c.adSets.reduce((ss, as) => ss + as.ads.length, 0), 0);
+  const totalAds    = plan.campaigns.reduce((s, c) => s + (getHierarchyLabels(c.platform, c.googleCampaignType).hasManualAds ? c.adSets.reduce((ss, as) => ss + as.ads.length, 0) : 0), 0);
   const totalFiles  = plan.campaigns.reduce((s, c) =>
     s + c.adSets.reduce((ss, as) => ss + as.ads.filter(a => a.fileDataUrl || a.fileName).length, 0), 0);
 
+  /* Labels agregados — se só há 1 tipo de campanha (ex: só Google Pesquisa), usa a terminologia específica.
+     Se há mais de 1 tipo, cai no termo genérico. */
+  const allLabels = plan.campaigns.map(c => getHierarchyLabels(c.platform, c.googleCampaignType));
+  const uniqueAdSet = [...new Set(allLabels.map(l => l.adSetPlural))];
+  const uniqueAd    = [...new Set(allLabels.map(l => l.adPlural))];
+  const adSetStatLabel = uniqueAdSet.length === 1 ? uniqueAdSet[0] : "Conjuntos / Grupos";
+  const adStatLabel    = uniqueAd.length    === 1 ? uniqueAd[0]    : "Anúncios";
+
   const stats: Array<{ label: string; value: number; icon: string; accent?: boolean }> = [
-    { label: "Campanhas", value: plan.campaigns.length, icon: "◐" },
-    { label: "Conjuntos", value: totalAdSets,           icon: "◧" },
-    { label: "Anúncios",  value: totalAds,              icon: "◇" },
+    { label: "Campanhas",     value: plan.campaigns.length, icon: "◐" },
+    { label: adSetStatLabel,  value: totalAdSets,           icon: "◧" },
+    { label: adStatLabel,     value: totalAds,              icon: "◇" },
     ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles, icon: "✦", accent: true }] : []),
   ];
 
@@ -579,6 +588,7 @@ export default function ResultadoPage() {
               })()}
               {plan.campaigns.map((campaign, ci) => {
                 const c = pc(campaign.platform);
+                const campaignLabels = getHierarchyLabels(campaign.platform, campaign.googleCampaignType);
                 return (
                   <div key={ci} className="card" style={{ overflow: "hidden" }}>
 
@@ -655,11 +665,12 @@ export default function ResultadoPage() {
                                   fontSize: 13, fontWeight: 700, color: "#0d1117",
                                   margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
                                 }}>
-                                  {adSet.name || `Conjunto ${j + 1}`}
+                                  {adSet.name || `${campaignLabels.adSet} ${j + 1}`}
                                 </p>
                                 <p style={{ fontSize: 11, color: "#9ba8bb", margin: "2px 0 0" }}>
-                                  {adSet.ads.length} anúncio{adSet.ads.length !== 1 ? "s" : ""}
-                                  {adSet.ads.length > 0 && ` · ${[...new Set(adSet.ads.map(a => a.format))].join(", ")}`}
+                                  {campaignLabels.hasManualAds
+                                    ? `${adSet.ads.length} ${(adSet.ads.length === 1 ? campaignLabels.ad : campaignLabels.adPlural).toLowerCase()}${adSet.ads.length > 0 ? ` · ${[...new Set(adSet.ads.map(a => a.format))].join(", ")}` : ""}`
+                                    : "Filtro de feed · sem anúncios manuais"}
                                 </p>
                               </div>
                             </div>
@@ -678,7 +689,7 @@ export default function ResultadoPage() {
                           <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                             {adSet.audience && <AudienceRow audience={adSet.audience} color={c.color} />}
 
-                            {adSet.ads.map((ad, k) => (
+                            {campaignLabels.hasManualAds && adSet.ads.map((ad, k) => (
                               <div key={k} className="ad-item">
                                 <div style={{
                                   display: "flex", alignItems: "center",
@@ -694,7 +705,7 @@ export default function ResultadoPage() {
                                       {ad.format}
                                     </span>
                                     <span style={{ fontSize: 12, fontWeight: 600, color: "#5a6478" }}>
-                                      {ad.name || `Anúncio ${k + 1}`}
+                                      {ad.name || `${campaignLabels.ad} ${k + 1}`}
                                     </span>
                                   </div>
                                   {ad.copy && <CopyBtn text={cleanCopy(ad.copy)} />}
@@ -764,6 +775,18 @@ export default function ResultadoPage() {
                                 )}
                               </div>
                             ))}
+                            {!campaignLabels.hasManualAds && (
+                              <div style={{
+                                background:"rgba(234,67,53,0.05)", borderRadius:8,
+                                border:"1px dashed rgba(234,67,53,0.22)",
+                                padding:"10px 14px", display:"flex", gap:10, alignItems:"flex-start",
+                              }}>
+                                <span style={{ fontSize:15 }}>🛍️</span>
+                                <p style={{ fontSize:12, color:"#5a6478", margin:0, lineHeight:1.55 }}>
+                                  Sem anúncios manuais — os criativos são gerados a partir do feed do Merchant Center, filtrados por este grupo.
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

@@ -3,6 +3,7 @@ import {
   Svg, Defs, LinearGradient, Stop, Rect, Line,
 } from "@react-pdf/renderer";
 import { CampaignPlan } from "@/types/campaign";
+import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* ═══════════════════════════════════════════════════════
    TOKENS — idênticos ao resultado page
@@ -226,14 +227,21 @@ function AudienceBlock({ audience, color }: { audience: string; color: string })
 export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
   const today       = new Date().toLocaleDateString("pt-BR");
   const totalAdSets = plan.campaigns.reduce((s, c) => s + c.adSets.length, 0);
-  const totalAds    = plan.campaigns.reduce((s, c) => s + c.adSets.reduce((ss, as) => ss + as.ads.length, 0), 0);
+  const totalAds    = plan.campaigns.reduce((s, c) => s + (getHierarchyLabels(c.platform, c.googleCampaignType).hasManualAds ? c.adSets.reduce((ss, as) => ss + as.ads.length, 0) : 0), 0);
   const totalFiles  = plan.campaigns.reduce((s, c) =>
     s + c.adSets.reduce((ss, as) => ss + as.ads.filter(a => a.fileDataUrl || a.fileName).length, 0), 0);
 
+  /* Labels agregados */
+  const allLabelsPdf = plan.campaigns.map(c => getHierarchyLabels(c.platform, c.googleCampaignType));
+  const uniqueAdSet  = [...new Set(allLabelsPdf.map(l => l.adSetPlural))];
+  const uniqueAd     = [...new Set(allLabelsPdf.map(l => l.adPlural))];
+  const adSetStatLabel = uniqueAdSet.length === 1 ? uniqueAdSet[0] : "Conjuntos / Grupos";
+  const adStatLabel    = uniqueAd.length    === 1 ? uniqueAd[0]    : "Anúncios";
+
   const stats = [
-    { label: "Campanhas", value: plan.campaigns.length },
-    { label: "Conjuntos", value: totalAdSets },
-    { label: "Anúncios",  value: totalAds },
+    { label: "Campanhas",    value: plan.campaigns.length },
+    { label: adSetStatLabel, value: totalAdSets },
+    { label: adStatLabel,    value: totalAds },
     ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles }] : []),
   ];
 
@@ -423,8 +431,9 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
         <View style={{ paddingHorizontal: 24, paddingTop: 18, paddingBottom: 20 }}>
           {plan.googleAdsConfig && <GoogleAdsConfigCard config={plan.googleAdsConfig} />}
           {plan.campaigns.map((campaign, ci) => {
-            const color = platColor(campaign.platform);
-            const bg    = platBg(color);
+            const color  = platColor(campaign.platform);
+            const bg     = platBg(color);
+            const labels = getHierarchyLabels(campaign.platform, campaign.googleCampaignType);
             return (
               <View key={ci} style={{
                 backgroundColor: WHITE, borderRadius: 13,
@@ -494,10 +503,9 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                               {adSet.name}
                             </Text>
                             <Text style={{ fontSize: 8.5, color: MUTED, marginTop: 2 }}>
-                              {adSet.ads.length} anúncio{adSet.ads.length !== 1 ? "s" : ""}
-                              {adSet.ads.length > 0
-                                ? " · " + [...new Set(adSet.ads.map(a => a.format))].join(", ")
-                                : ""}
+                              {labels.hasManualAds
+                                ? `${adSet.ads.length} ${(adSet.ads.length === 1 ? labels.ad : labels.adPlural).toLowerCase()}${adSet.ads.length > 0 ? " · " + [...new Set(adSet.ads.map(a => a.format))].join(", ") : ""}`
+                                : "Filtro de feed · sem anúncios manuais"}
                             </Text>
                           </View>
                         </View>
@@ -521,8 +529,24 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                           <AudienceBlock audience={adSet.audience} color={color} />
                         ) : null}
 
+                        {/* Feed note — quando a campanha não tem anúncios manuais (Shopping) */}
+                        {!labels.hasManualAds && (
+                          <View style={{
+                            backgroundColor: "#EA433509", borderRadius: 8,
+                            borderWidth: 1, borderColor: "#EA433522", borderStyle: "dashed",
+                            paddingHorizontal: 12, paddingVertical: 9,
+                            flexDirection: "row", gap: 8,
+                          }}>
+                            <Text style={{ fontSize: 11 }}>🛍️</Text>
+                            <Text style={{ fontSize: 8.5, color: SUB, flex: 1, lineHeight: 1.55 }}>
+                              Sem anúncios manuais — criativos gerados automaticamente pelo feed do Merchant Center,
+                              filtrados por este grupo.
+                            </Text>
+                          </View>
+                        )}
+
                         {/* Anúncios */}
-                        {adSet.ads.map((ad, k) => (
+                        {labels.hasManualAds && adSet.ads.map((ad, k) => (
                           <View key={k} style={{
                             backgroundColor: WHITE, borderRadius: 9,
                             borderWidth: 1, borderColor: BORDMID,

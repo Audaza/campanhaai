@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { AdFormat, AdInput, AdSetInput, CampaignInput, BudgetLevel, LinkPreviewData, Platform, GoogleCampaignType } from "@/types/campaign";
+import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* Google Ads — tipos sem upload manual de mídia */
 const GOOGLE_TEXT_ONLY_TYPES: GoogleCampaignType[] = ["Pesquisa", "Shopping", "Vídeo/YouTube"];
@@ -19,25 +20,12 @@ function googleFormatsFor(type?: GoogleCampaignType | ""): AdFormat[] {
   }
 }
 
-/* Label do grupo de anúncios (Google vs outros) */
-function googleAdGroupLabel(type?: GoogleCampaignType | ""): string {
-  if (type === "Pesquisa" || type === "Display" || type === "Performance Max" || type === "Demand Gen") return "Grupo de Anúncios";
-  if (type === "Vídeo/YouTube") return "Grupo de Vídeos";
-  if (type === "Shopping") return "Grupo de Produtos";
-  return "Grupo de Anúncios";
-}
-
-/* Label do campo de audiência (Google varia por tipo) */
-function googleAudienceLabel(type?: GoogleCampaignType | ""): string {
-  if (type === "Pesquisa") return "Palavras-chave / Segmentação";
-  if (type === "Shopping") return "Produtos / Categorias";
-  return "Segmentação / Público";
-}
-
-/* Label do copy por tipo */
+/* Label do copy por tipo Google (mantido aqui — específico do AdCard) */
 function googleCopyLabel(type?: GoogleCampaignType | ""): string {
   if (type === "Pesquisa") return "Títulos e descrições";
   if (type === "Shopping") return "Observações do produto";
+  if (type === "Performance Max") return "Títulos, descrições e CTAs do grupo de recursos";
+  if (type === "Vídeo/YouTube") return "Título + CTA do vídeo";
   return "Copy do anúncio";
 }
 
@@ -96,16 +84,31 @@ const PLATFORM_CONFIG: Record<Platform, PlatformCfg> = {
 
 function uid() { return Math.random().toString(36).slice(2,9); }
 
-function adsetName(i: number) { return `Conjunto #${i + 1}`; }
-function adName(i: number)    { return `ADS #${i + 1}`; }
+function adsetName(i: number, platform: Platform = "Facebook", gType?: GoogleCampaignType | "") {
+  const { adSetPrefix } = getHierarchyLabels(platform, gType);
+  return `${adSetPrefix} #${i + 1}`;
+}
+function adName(i: number, platform: Platform = "Facebook", gType?: GoogleCampaignType | "") {
+  const { adPrefix } = getHierarchyLabels(platform, gType);
+  return `${adPrefix} #${i + 1}`;
+}
 
 /* ── Helpers ── */
-export function makeAd(index = 0, platform: Platform = "Facebook"): AdInput {
+export function makeAd(index = 0, platform: Platform = "Facebook", gType?: GoogleCampaignType | ""): AdInput {
   const cfg = PLATFORM_CONFIG[platform];
-  return { id:uid(), name:adName(index), format:cfg.defaultFormat, copy:"" };
+  const effectiveFormat: AdFormat = platform === "Google Ads" && gType
+    ? (googleFormatsFor(gType)[0] ?? cfg.defaultFormat)
+    : cfg.defaultFormat;
+  return { id:uid(), name:adName(index, platform, gType), format:effectiveFormat, copy:"" };
 }
-export function makeAdSet(adCount = 1, index = 0, platform: Platform = "Facebook"): AdSetInput {
-  return { id:uid(), name:adsetName(index), audience:"", dailyBudget:"", ads:Array.from({length:adCount},(_,i)=>makeAd(i,platform)) };
+export function makeAdSet(adCount = 1, index = 0, platform: Platform = "Facebook", gType?: GoogleCampaignType | ""): AdSetInput {
+  return {
+    id:uid(),
+    name:adsetName(index, platform, gType),
+    audience:"",
+    dailyBudget:"",
+    ads:Array.from({length:adCount},(_,i)=>makeAd(i,platform,gType)),
+  };
 }
 
 const OBJ_CODE: Record<string, string> = {
@@ -138,6 +141,7 @@ export function makeStructure(
   adSets = 2,
   ads = 1,
   prefill?: StructurePrefill,
+  googleCampaignType?: GoogleCampaignType | "",
 ): CampaignInput[] {
   const audienceDesc   = prefill ? buildAudienceDesc(prefill) : "";
   const objCode        = prefill ? (OBJ_CODE[prefill.objective] ?? "CAMP") : "CAMP";
@@ -168,6 +172,7 @@ export function makeStructure(
     const platLabel  = isMeta ? "FACEBOOK + INSTAGRAM" : platform.replace(" Ads", "").toUpperCase();
     const platDisplay = isMeta ? "Facebook + Instagram" : platform;
 
+    const gType = platform === "Google Ads" ? (googleCampaignType || undefined) : undefined;
     return Array.from({ length: campaignsPerPlatform }, (_, ci) => {
       const suffix = campaignsPerPlatform > 1 ? ` ${ci + 1}` : "";
       const name = baseName
@@ -177,9 +182,10 @@ export function makeStructure(
         id: uid(),
         name,
         platform,
+        googleCampaignType: gType as GoogleCampaignType | undefined,
         totalBudget: campaignBudget,
         adSets: Array.from({ length: adSets }, (__, asi) =>
-          makeAdSetPrefilled(ads, audienceDesc, asi, adsetBudget, platform)
+          makeAdSetPrefilled(ads, audienceDesc, asi, adsetBudget, platform, gType)
         ),
       };
     });
@@ -200,18 +206,21 @@ function buildAudienceDesc(p: StructurePrefill): string {
   return parts.join(" · ");
 }
 
-function makeAdPrefilled(index = 0, platform: Platform = "Facebook"): AdInput {
+function makeAdPrefilled(index = 0, platform: Platform = "Facebook", gType?: GoogleCampaignType | ""): AdInput {
   const cfg = PLATFORM_CONFIG[platform];
-  return { id: uid(), name: adName(index), format: cfg.defaultFormat, copy: "" };
+  const effectiveFormat: AdFormat = platform === "Google Ads" && gType
+    ? (googleFormatsFor(gType)[0] ?? cfg.defaultFormat)
+    : cfg.defaultFormat;
+  return { id: uid(), name: adName(index, platform, gType), format: effectiveFormat, copy: "" };
 }
 
-function makeAdSetPrefilled(adCount = 1, audience = "", index = 0, dailyBudget = "", platform: Platform = "Facebook"): AdSetInput {
+function makeAdSetPrefilled(adCount = 1, audience = "", index = 0, dailyBudget = "", platform: Platform = "Facebook", gType?: GoogleCampaignType | ""): AdSetInput {
   return {
     id: uid(),
-    name: adsetName(index),
+    name: adsetName(index, platform, gType),
     audience,
     dailyBudget,
-    ads: Array.from({ length: adCount }, (_, ai) => makeAdPrefilled(ai, platform)),
+    ads: Array.from({ length: adCount }, (_, ai) => makeAdPrefilled(ai, platform, gType)),
   };
 }
 
@@ -770,12 +779,14 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
     const current  = campaigns[cIdx].adSets;
     const adCount  = current[0]?.ads.length ?? 1;
     const platform = campaigns[cIdx].platform;
-    updC(cIdx,{adSets:[...current, makeAdSet(adCount, current.length, platform)]});
+    const gType    = campaigns[cIdx].googleCampaignType;
+    updC(cIdx,{adSets:[...current, makeAdSet(adCount, current.length, platform, gType)]});
   }
   function addAd(cIdx:number, asIdx:number) {
     const current  = campaigns[cIdx].adSets[asIdx].ads;
     const platform = campaigns[cIdx].platform;
-    updAs(cIdx,asIdx,{ads:[...current, makeAd(current.length, platform)]});
+    const gType    = campaigns[cIdx].googleCampaignType;
+    updAs(cIdx,asIdx,{ads:[...current, makeAd(current.length, platform, gType)]});
   }
   function remAdSet(cIdx:number, asIdx:number) {
     if (campaigns[cIdx].adSets.length<=1) return;
@@ -792,8 +803,13 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
         const cfg      = PLATFORM_CONFIG[campaign.platform];
         const color    = cfg.color;
         const totalAds = campaign.adSets.reduce((s,as)=>s+as.ads.length,0);
-        const adGroupLabel  = campaign.platform === "Google Ads" ? googleAdGroupLabel(googleCampaignType)  : cfg.adGroupLabel;
-        const audienceLabel = campaign.platform === "Google Ads" ? googleAudienceLabel(googleCampaignType) : cfg.audienceLabel;
+        /* Usa o tipo da campanha em si (per-campaign), caindo no prop global se ausente */
+        const gType    = campaign.googleCampaignType ?? (googleCampaignType || undefined);
+        const labels   = getHierarchyLabels(campaign.platform, gType);
+        const adGroupLabel  = labels.adSet;
+        const audienceLabel = labels.audienceLabel;
+        const audiencePH    = labels.audiencePH;
+        const showManualAds = labels.hasManualAds;
         return (
           <div key={campaign.id} style={{
             background:"var(--surface-2)", borderRadius:14,
@@ -813,7 +829,8 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
                   {campaign.platform}
                 </div>
                 <span style={{ fontSize:11, color:"var(--muted)", marginLeft:"auto" }}>
-                  {campaign.adSets.length} {adGroupLabel.toLowerCase()}{campaign.adSets.length>1?"s":""} · {totalAds} anúncio{totalAds>1?"s":""}
+                  {campaign.adSets.length} {(campaign.adSets.length > 1 ? labels.adSetPlural : labels.adSet).toLowerCase()}
+                  {showManualAds ? ` · ${totalAds} ${(totalAds > 1 ? labels.adPlural : labels.ad).toLowerCase()}` : ""}
                 </span>
               </div>
               <div style={{ display:"flex", gap:10 }}>
@@ -880,43 +897,65 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
                   <div style={{ marginBottom:12 }}>
                     <SbLabel>{audienceLabel}</SbLabel>
                     <SbInput value={adSet.audience}
-                      placeholder={cfg.audiencePH}
+                      placeholder={audiencePH}
                       onChange={v=>updAs(cIdx,asIdx,{audience:v})} multiline/>
                   </div>
 
-                  <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-                    {adSet.ads.map((ad,adIdx) => (
-                      <div key={ad.id}>
-                        <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
-                          <span style={{
-                            fontSize:10, fontWeight:700, color,
-                            textTransform:"uppercase" as const, letterSpacing:"0.04em",
-                          }}>
-                            Anúncio {adIdx+1}
-                          </span>
-                          {adSet.ads.length>1 && (
-                            <button type="button" onClick={()=>remAd(cIdx,asIdx,adIdx)} style={{
-                              marginLeft:"auto", fontSize:11, color:"var(--danger)",
-                              background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
-                            }}>
-                              × Remover
-                            </button>
-                          )}
-                        </div>
-                        <AdCard
-                          ad={ad}
-                          platform={campaign.platform}
-                          googleCampaignType={googleCampaignType}
-                          onUpdate={u=>updAd(cIdx,asIdx,adIdx,u)}
-                        />
+                  {showManualAds ? (
+                    <>
+                      <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                        {adSet.ads.map((ad,adIdx) => (
+                          <div key={ad.id}>
+                            <div style={{ display:"flex", alignItems:"center", marginBottom:6 }}>
+                              <span style={{
+                                fontSize:10, fontWeight:700, color,
+                                textTransform:"uppercase" as const, letterSpacing:"0.04em",
+                              }}>
+                                {labels.ad} {adIdx+1}
+                              </span>
+                              {adSet.ads.length>1 && (
+                                <button type="button" onClick={()=>remAd(cIdx,asIdx,adIdx)} style={{
+                                  marginLeft:"auto", fontSize:11, color:"var(--danger)",
+                                  background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
+                                }}>
+                                  × Remover
+                                </button>
+                              )}
+                            </div>
+                            <AdCard
+                              ad={ad}
+                              platform={campaign.platform}
+                              googleCampaignType={gType}
+                              onUpdate={u=>updAd(cIdx,asIdx,adIdx,u)}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  <button type="button" className="add-dashed"
-                    onClick={()=>addAd(cIdx,asIdx)} style={{ marginTop:9 }}>
-                    + Adicionar anúncio
-                  </button>
+                      <button type="button" className="add-dashed"
+                        onClick={()=>addAd(cIdx,asIdx)} style={{ marginTop:9 }}>
+                        + Adicionar {labels.ad.toLowerCase()}
+                      </button>
+                    </>
+                  ) : (
+                    /* Shopping: sem anúncios manuais — feed do Merchant Center */
+                    <div style={{
+                      background:"rgba(234,67,53,0.06)", borderRadius:8, padding:"11px 14px",
+                      border:"1px dashed rgba(234,67,53,0.25)",
+                      display:"flex", gap:10, alignItems:"flex-start",
+                    }}>
+                      <span style={{ fontSize:15 }}>🛍️</span>
+                      <div>
+                        <p style={{ fontSize:12, fontWeight:600, color:"#9a2d24", margin:"0 0 3px" }}>
+                          Sem anúncios manuais
+                        </p>
+                        <p style={{ fontSize:11, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
+                          Em Shopping, o Google monta os anúncios automaticamente a partir do feed do Merchant Center.
+                          Use este grupo para filtrar quais produtos serão promovidos (categoria, preço, etc).
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
 
