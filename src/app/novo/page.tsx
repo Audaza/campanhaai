@@ -884,8 +884,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </>
                   )}
 
-                  {/* Objetivo — só após selecionar plataforma */}
-                  {form.platforms.length > 0 && (
+                  {/* Objetivo — só após selecionar plataforma (e, se for Google, também o tipo de campanha) */}
+                  {form.platforms.length > 0 && (!hasGoogle || form.googleCampaignType) && (
                     <Field label="Objetivo principal"
                       hint={hasGoogle && form.googleCampaignType ? `Objetivos suportados por ${form.googleCampaignType}` : undefined}>
                       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
