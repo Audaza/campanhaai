@@ -991,40 +991,6 @@ export default function ResultadoPage() {
           </section>
           )}
 
-          {/* ═════ RECOMENDAÇÕES ═════ */}
-          {plan.recommendations && plan.recommendations.length > 0 && (
-            <section className="rise d-4">
-              <SectionTitle
-                eyebrow="Best Practices"
-                title="Recomendações Estratégicas"
-                subtitle="Boas práticas para potencializar resultados e maximizar ROAS"
-              />
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {plan.recommendations.map((rec, i) => (
-                  <div key={i} className="rec-card">
-                    <div style={{
-                      width: 32, height: 32, borderRadius: 8,
-                      background: C.brandSoft,
-                      border: `1px solid ${C.brand}26`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      flexShrink: 0,
-                    }}>
-                      <span style={{
-                        fontSize: 12, fontWeight: 800, color: C.brand,
-                        fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em",
-                      }}>
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 13.5, color: C.text, margin: 0, lineHeight: 1.65, flex: 1 }}>
-                      {rec}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
         </main>
       </div>
     </>

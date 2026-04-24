@@ -963,32 +963,6 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
         </Page>
       )}
 
-      {/* ═════════════════════════════════════════════
-          PÁGINA 5 — RECOMENDAÇÕES (se existirem)
-      ═════════════════════════════════════════════ */}
-      {plan.recommendations && plan.recommendations.length > 0 && (
-        <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
-          <PageHeader client={plan.overview.clientName} section="Recomendações" />
-
-          <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
-            <SectionTitle eyebrow="Best Practices" title="Recomendações Estratégicas" />
-
-            <View style={{ marginBottom: 16 }} wrap={false}>
-              <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.65 }}>
-                Práticas recomendadas para potencializar os resultados desta campanha e
-                maximizar o retorno sobre o investimento (ROAS).
-              </Text>
-            </View>
-
-            {plan.recommendations.map((rec, i) => (
-              <RecommendationCard key={i} text={rec} index={i} />
-            ))}
-          </View>
-
-          <PageFooter date={today} />
-        </Page>
-      )}
-
     </Document>
   );
 }
