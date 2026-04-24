@@ -7,6 +7,7 @@ import { ArrowLeft, Download } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
+import { savePlan } from "@/lib/savedPlans";
 
 /* Facebook + Instagram = Meta — mostra os 2 ícones juntos quando ambos estão na campanha */
 function platformsToDisplay(platform: string, all: readonly string[]): string[] {
@@ -121,13 +122,32 @@ export default function ResultadoPage() {
   const router = useRouter();
   const [plan, setPlan]     = useState<CampaignPlan | null>(null);
   const [isClient, setClient] = useState(false);
+  const [savedId,  setSavedId]    = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     setClient(true);
     const raw = sessionStorage.getItem("campaignPlan");
     if (!raw) { router.push("/"); return; }
     setPlan(JSON.parse(raw));
+    const id = sessionStorage.getItem("campaignPlanId");
+    if (id) setSavedId(id);
   }, [router]);
+
+  function handleSave() {
+    if (!plan) return;
+    setSaveState("saving");
+    try {
+      const saved = savePlan(plan, savedId ?? undefined);
+      setSavedId(saved.id);
+      sessionStorage.setItem("campaignPlanId", saved.id);
+      setSaveState("saved");
+      setTimeout(() => setSaveState("idle"), 2500);
+    } catch {
+      setSaveState("error");
+      setTimeout(() => setSaveState("idle"), 2500);
+    }
+  }
 
   if (!plan) return (
     <div style={{ minHeight: "100vh", background: "#f3f5f8", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -254,7 +274,7 @@ export default function ResultadoPage() {
         }}>
           <button className="topbar-btn" onClick={() => router.push("/")}>
             <ArrowLeft style={{ width: 14, height: 14 }} />
-            Nova campanha
+            Menu
           </button>
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -271,17 +291,36 @@ export default function ResultadoPage() {
           </div>
 
           {isClient && (
-            <PDFDownloadLink
-              document={<CampaignPDF plan={plan} />}
-              fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
-            >
-              {({ loading: l }) => (
-                <button disabled={l} className="export-btn" style={l ? { background: "#e8ebf1", color: "#9ba8bb", cursor: "not-allowed" } : {}}>
-                  <Download style={{ width: 13, height: 13 }} />
-                  {l ? "Gerando…" : "Exportar PDF"}
-                </button>
-              )}
-            </PDFDownloadLink>
+            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saveState === "saving"}
+                className="topbar-btn"
+                style={{
+                  background: saveState === "saved" ? "#dcfce7" : "transparent",
+                  color: saveState === "saved" ? "#15803d" : saveState === "error" ? "#dc2626" : undefined,
+                  borderColor: saveState === "saved" ? "#86efac" : undefined,
+                }}
+              >
+                {saveState === "saving" ? "Salvando…"
+                 : saveState === "saved" ? (savedId ? "✓ Atualizado" : "✓ Salvo")
+                 : saveState === "error" ? "Erro ao salvar"
+                 : savedId ? "↻ Atualizar" : "💾 Salvar"}
+              </button>
+
+              <PDFDownloadLink
+                document={<CampaignPDF plan={plan} />}
+                fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
+              >
+                {({ loading: l }) => (
+                  <button disabled={l} className="export-btn" style={l ? { background: "#e8ebf1", color: "#9ba8bb", cursor: "not-allowed" } : {}}>
+                    <Download style={{ width: 13, height: 13 }} />
+                    {l ? "Gerando…" : "Exportar PDF"}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            </div>
           )}
         </header>
 
