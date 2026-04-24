@@ -73,6 +73,7 @@ export interface CampaignFormData {
   duration:          Duration;
   startDate:         string;
   endDate:           string;
+  createTimeline:    boolean;
   ageMin:            string;
   ageMax:            string;
   gender:            Gender;

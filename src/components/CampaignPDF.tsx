@@ -939,27 +939,29 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
       </Page>
 
       {/* ═════════════════════════════════════════════
-          PÁGINA 4 — CRONOGRAMA
+          PÁGINA 4 — CRONOGRAMA (só se houver fases)
       ═════════════════════════════════════════════ */}
-      <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
-        <PageHeader client={plan.overview.clientName} section="Cronograma" />
+      {plan.timeline && plan.timeline.length > 0 && (
+        <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
+          <PageHeader client={plan.overview.clientName} section="Cronograma" />
 
-        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
-          <SectionTitle eyebrow="Timeline" title="Cronograma de Implementação" />
+          <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
+            <SectionTitle eyebrow="Timeline" title="Cronograma de Implementação" />
 
-          {plan.timeline.map((phase, i) => (
-            <TimelinePhaseCard
-              key={i}
-              phase={phase}
-              index={i}
-              isFirst={i === 0}
-              isLast={i === plan.timeline.length - 1}
-            />
-          ))}
-        </View>
+            {plan.timeline.map((phase, i) => (
+              <TimelinePhaseCard
+                key={i}
+                phase={phase}
+                index={i}
+                isFirst={i === 0}
+                isLast={i === plan.timeline.length - 1}
+              />
+            ))}
+          </View>
 
-        <PageFooter date={today} />
-      </Page>
+          <PageFooter date={today} />
+        </Page>
+      )}
 
       {/* ═════════════════════════════════════════════
           PÁGINA 5 — RECOMENDAÇÕES (se existirem)

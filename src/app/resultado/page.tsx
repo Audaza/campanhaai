@@ -919,6 +919,7 @@ export default function ResultadoPage() {
           </section>
 
           {/* ═════ CRONOGRAMA ═════ */}
+          {plan.timeline && plan.timeline.length > 0 && (
           <section className="rise d-3" style={{ marginBottom: 32 }}>
             <SectionTitle
               eyebrow="Timeline"
@@ -988,6 +989,7 @@ export default function ResultadoPage() {
               </div>
             </div>
           </section>
+          )}
 
           {/* ═════ RECOMENDAÇÕES ═════ */}
           {plan.recommendations && plan.recommendations.length > 0 && (

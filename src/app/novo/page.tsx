@@ -102,7 +102,7 @@ function googleAdLabel(type: GoogleCampaignType | ""): string {
 
 const DURATIONS: Duration[] = ["15 dias","30 dias","60 dias","90 dias"];
 const GENDERS: Gender[]     = ["Todos","Masculino","Feminino"];
-const STEP_LABELS            = ["Cliente","Campanha","Público","Estrutura"];
+const STEP_LABELS            = ["Cliente","Campanha","Cronograma","Público","Estrutura"];
 
 const INITIAL: CampaignFormData = {
   clientName:"", product:"", website:"",
@@ -111,6 +111,7 @@ const INITIAL: CampaignFormData = {
   budgetType:"total", budgetLevel:"adset", budget:"",
   duration:"30 dias",
   startDate:"", endDate:"",
+  createTimeline: true,
   ageMin:"18", ageMax:"45",
   gender:"Todos", location:"",
   audienceType:"personalizado", interests:"", remarketingSource:"",
@@ -324,6 +325,17 @@ export default function Home() {
       if (!form.budget.trim())    { setError("Informe o valor do orçamento."); return; }
     }
     if (step === 3) {
+      // Cronograma: se personalizado + createTimeline, precisa de datas válidas
+      if (form.createTimeline && form.duration === "personalizado") {
+        if (!form.startDate || !form.endDate) {
+          setError("Informe as datas de início e encerramento."); return;
+        }
+        if (daysBetween(form.startDate, form.endDate) <= 0) {
+          setError("A data de encerramento deve ser após a de início."); return;
+        }
+      }
+    }
+    if (step === 4) {
       if (!form.location.trim()) {
         setError("Informe a localização."); return;
       }
@@ -455,7 +467,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
         })),
       }));
 
-      const timeline = (() => {
+      const timeline: TimelinePhase[] = (() => {
+        if (!form.createTimeline) return [];
         if (form.duration === "personalizado" && form.startDate && form.endDate && daysBetween(form.startDate, form.endDate) > 0) {
           return computeTimeline(form.startDate, form.endDate);
         }
@@ -504,7 +517,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
     }
   }
 
-  const isWide    = step === 4;
+  const isWide    = step === 5;
   const progress  = (step / STEP_LABELS.length) * 100;
 
   return (
@@ -607,7 +620,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
             background:"var(--surface)",
             borderRadius:20,
             boxShadow:"0 2px 24px rgba(0,0,0,0.07),0 0 0 1px var(--border)",
-            padding: step === 4 ? "28px 24px" : "32px 30px",
+            padding: step === 5 ? "28px 24px" : "32px 30px",
             overflow:"hidden",
           }}>
             <div key={step} className={dir === "fwd" ? "slide-fwd" : "slide-bwd"}>
@@ -958,54 +971,6 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </div>
                   )}
 
-                  {/* Período */}
-                  <Field label="Período da campanha">
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
-                      {(["7 dias","15 dias","30 dias","Personalizado"] as const).map(label => {
-                        const val: Duration = label === "Personalizado" ? "personalizado" : label as Duration;
-                        const active = form.duration === val;
-                        return (
-                          <button key={label} type="button" className="ap-pill"
-                            onClick={() => set("duration", val)}
-                            style={{
-                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
-                              background: active ? "var(--primary-dim)" : "transparent",
-                              color: active ? "var(--primary)" : "var(--muted)",
-                              fontWeight: active ? 600 : 500,
-                            }}
-                          >{label}</button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Date pickers — only when Personalizado */}
-                    {form.duration === "personalizado" && (
-                      <div style={{ display:"flex", gap:12, marginTop:10 }}>
-                        <div style={{ flex:1 }}>
-                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
-                            Início da campanha
-                          </span>
-                          <input className="ap-input" type="date"
-                            value={form.startDate} onChange={e=>set("startDate",e.target.value)}/>
-                        </div>
-                        <div style={{ flex:1 }}>
-                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
-                            Data de encerramento
-                          </span>
-                          <input className="ap-input" type="date"
-                            min={form.startDate || undefined}
-                            value={form.endDate} onChange={e=>set("endDate",e.target.value)}/>
-                        </div>
-                      </div>
-                    )}
-                    {form.duration === "personalizado" && form.startDate && form.endDate && daysBetween(form.startDate, form.endDate) > 0 && (
-                      <p style={{ fontSize:12, color:"var(--muted)", margin:0, marginTop:4 }}>
-                        → {daysBetween(form.startDate, form.endDate)} dias
-                        {daysBetween(form.startDate, form.endDate) < 15 ? " · apenas setup e encerramento" : ""}
-                      </p>
-                    )}
-                  </Field>
-
                   {/* Estrutura — adapta níveis e labels por plataforma/tipo Google */}
                   {(() => {
                     const primaryPlatform = form.platforms[0];
@@ -1055,8 +1020,118 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                 </div>
               )}
 
-              {/* ── Step 3: Público ── */}
-              {step === 3 && (() => {
+              {/* ── Step 3: Cronograma ── */}
+              {step === 3 && (
+                <div style={{ display:"flex", flexDirection:"column", gap:22 }}>
+                  <CardTitle
+                    title="Cronograma"
+                    sub="Defina o período da campanha e se um plano de execução deve ser gerado"
+                  />
+
+                  {/* Toggle criar cronograma */}
+                  <div style={{
+                    display:"flex", alignItems:"center", gap:14,
+                    padding:"14px 16px", borderRadius:12,
+                    background: form.createTimeline ? "rgba(0,113,227,0.05)" : "var(--surface-2)",
+                    border: `1px solid ${form.createTimeline ? "rgba(0,113,227,0.20)" : "var(--border-mid)"}`,
+                    transition: "all 0.2s",
+                  }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <p style={{ fontSize:14, fontWeight:700, color:"var(--text)", margin:0, letterSpacing:"-0.015em" }}>
+                        Criar cronograma
+                      </p>
+                      <p style={{ fontSize:12, color:"var(--muted)", margin:"3px 0 0", lineHeight:1.5 }}>
+                        Quando ativo, gera fases de execução (setup, otimização, escala) no resultado e no PDF.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={form.createTimeline}
+                      onClick={() => set("createTimeline", !form.createTimeline)}
+                      style={{
+                        width: 46, height: 26, borderRadius: 999,
+                        background: form.createTimeline ? "var(--primary)" : "var(--border-mid)",
+                        border: "none", cursor: "pointer", padding: 3,
+                        position: "relative", transition: "background 0.2s",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{
+                        display: "block", width: 20, height: 20, borderRadius: "50%",
+                        background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                        transform: form.createTimeline ? "translateX(20px)" : "translateX(0)",
+                        transition: "transform 0.2s cubic-bezier(0.22,1,0.36,1)",
+                      }} />
+                    </button>
+                  </div>
+
+                  {/* Período */}
+                  <Field label="Período da campanha">
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                      {(["7 dias","15 dias","30 dias","Personalizado"] as const).map(label => {
+                        const val: Duration = label === "Personalizado" ? "personalizado" : label as Duration;
+                        const active = form.duration === val;
+                        return (
+                          <button key={label} type="button" className="ap-pill"
+                            onClick={() => set("duration", val)}
+                            style={{
+                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
+                              background: active ? "var(--primary-dim)" : "transparent",
+                              color: active ? "var(--primary)" : "var(--muted)",
+                              fontWeight: active ? 600 : 500,
+                            }}
+                          >{label}</button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Date pickers — só quando Personalizado */}
+                    {form.duration === "personalizado" && (
+                      <div style={{ display:"flex", gap:12, marginTop:10 }}>
+                        <div style={{ flex:1 }}>
+                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                            Início da campanha
+                          </span>
+                          <input className="ap-input" type="date"
+                            value={form.startDate} onChange={e=>set("startDate",e.target.value)}/>
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", display:"block", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                            Data de encerramento
+                          </span>
+                          <input className="ap-input" type="date"
+                            min={form.startDate || undefined}
+                            value={form.endDate} onChange={e=>set("endDate",e.target.value)}/>
+                        </div>
+                      </div>
+                    )}
+                    {form.duration === "personalizado" && form.startDate && form.endDate && daysBetween(form.startDate, form.endDate) > 0 && (
+                      <p style={{ fontSize:12, color:"var(--muted)", margin:0, marginTop:4 }}>
+                        → {daysBetween(form.startDate, form.endDate)} dias
+                        {daysBetween(form.startDate, form.endDate) < 15 ? " · apenas setup e encerramento" : ""}
+                      </p>
+                    )}
+                  </Field>
+
+                  {!form.createTimeline && (
+                    <div style={{
+                      background:"rgba(139,92,246,0.06)", borderRadius:10, padding:"12px 14px",
+                      border:"1px solid rgba(139,92,246,0.2)",
+                      display:"flex", gap:10, alignItems:"flex-start",
+                    }}>
+                      <span style={{ fontSize:15 }}>💡</span>
+                      <p style={{ fontSize:13, color:"#6D28D9", margin:0, lineHeight:1.55 }}>
+                        O cronograma não será incluído no planejamento — nem na página de resultado, nem no PDF.
+                        O período continua sendo usado para o orçamento e a estratégia.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Step 4: Público ── */}
+              {step === 4 && (() => {
                 const gType = form.googleCampaignType as GoogleCampaignType | "";
                 const demoExclusionOnly = hasGoogle && gType && GOOGLE_DEMO_EXCLUSION_ONLY.includes(gType);
                 const subtitle = hasGoogle
@@ -1248,8 +1323,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                 );
               })()}
 
-              {/* ── Step 4: Estrutura ── */}
-              {step === 4 && (
+              {/* ── Step 5: Estrutura ── */}
+              {step === 5 && (
                 <div>
                   <CardTitle
                     title="Estrutura da campanha"
@@ -1283,7 +1358,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
             {step > 1 && (
               <button className="btn-secondary" onClick={back}>← Voltar</button>
             )}
-            {step < 4 ? (
+            {step < 5 ? (
               <button className="btn-primary" onClick={next}>Continuar →</button>
             ) : (
               <button className="btn-primary" onClick={submit} disabled={loading}>
@@ -1300,7 +1375,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
             )}
           </div>
 
-          {step < 4 && (
+          {step < 5 && (
             <p style={{ textAlign:"center" as const, fontSize:12, color:"var(--muted)", marginTop:14 }}>
               Passo {step} de {STEP_LABELS.length} · {STEP_LABELS[step]} a seguir
             </p>
