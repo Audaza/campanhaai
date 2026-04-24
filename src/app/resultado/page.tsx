@@ -175,7 +175,7 @@ export default function ResultadoPage() {
   const stats: Array<{ label: string; value: number; icon: string; accent?: boolean }> = [
     { label: "Campanhas",     value: plan.campaigns.length, icon: "◐" },
     { label: adSetStatLabel,  value: totalAdSets,           icon: "◧" },
-    { label: adStatLabel,     value: totalAds,              icon: "◇" },
+    ...(totalAds > 0 ? [{ label: adStatLabel, value: totalAds, icon: "◇" }] : []),
     ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles, icon: "✦", accent: true }] : []),
   ];
 
@@ -781,9 +781,11 @@ export default function ResultadoPage() {
                                 border:"1px dashed rgba(234,67,53,0.22)",
                                 padding:"10px 14px", display:"flex", gap:10, alignItems:"flex-start",
                               }}>
-                                <span style={{ fontSize:15 }}>🛍️</span>
+                                <span style={{ fontSize:15 }}>{campaign.googleCampaignType === "Performance Max" ? "⚡" : "🛍️"}</span>
                                 <p style={{ fontSize:12, color:"#5a6478", margin:0, lineHeight:1.55 }}>
-                                  Sem anúncios manuais — os criativos são gerados a partir do feed do Merchant Center, filtrados por este grupo.
+                                  {campaign.googleCampaignType === "Performance Max"
+                                    ? "Grupo de Recursos — contém títulos, descrições, imagens, vídeos e sinais de público. Google monta os criativos automaticamente."
+                                    : "Sem anúncios manuais — criativos gerados a partir do feed do Merchant Center, filtrados por este grupo."}
                                 </p>
                               </div>
                             )}

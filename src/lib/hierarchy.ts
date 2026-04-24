@@ -92,7 +92,7 @@ const GOOGLE_LABELS: Record<GoogleCampaignType, HierarchyLabels> = {
     adPlural:      "Conjuntos de Ativos",
     adSetPrefix:   "Asset Group",
     adPrefix:      "Asset",
-    hasManualAds:  true,
+    hasManualAds:  false,
     isAssetGroup:  true,
     audienceLabel: "Sinais de público",
     audiencePH:    "Ex: gestores de RH, interessados em benefícios corporativos",

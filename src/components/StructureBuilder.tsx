@@ -938,20 +938,21 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
                       </button>
                     </>
                   ) : (
-                    /* Shopping: sem anúncios manuais — feed do Merchant Center */
+                    /* Shopping / PMax: sem anúncios manuais — mensagem adaptada ao tipo */
                     <div style={{
                       background:"rgba(234,67,53,0.06)", borderRadius:8, padding:"11px 14px",
                       border:"1px dashed rgba(234,67,53,0.25)",
                       display:"flex", gap:10, alignItems:"flex-start",
                     }}>
-                      <span style={{ fontSize:15 }}>🛍️</span>
+                      <span style={{ fontSize:15 }}>{gType === "Performance Max" ? "⚡" : "🛍️"}</span>
                       <div>
                         <p style={{ fontSize:12, fontWeight:600, color:"#9a2d24", margin:"0 0 3px" }}>
-                          Sem anúncios manuais
+                          {gType === "Performance Max" ? "Grupo de Recursos" : "Sem anúncios manuais"}
                         </p>
                         <p style={{ fontSize:11, color:"var(--muted)", margin:0, lineHeight:1.5 }}>
-                          Em Shopping, o Google monta os anúncios automaticamente a partir do feed do Merchant Center.
-                          Use este grupo para filtrar quais produtos serão promovidos (categoria, preço, etc).
+                          {gType === "Performance Max"
+                            ? "Performance Max não tem anúncios individuais — cada Grupo de Recursos reúne títulos, descrições, imagens, vídeos, logos e sinais de público. O Google monta os criativos automaticamente."
+                            : "Em Shopping, o Google monta os anúncios automaticamente a partir do feed do Merchant Center. Use este grupo para filtrar quais produtos serão promovidos (categoria, preço, etc)."}
                         </p>
                       </div>
                     </div>

@@ -241,7 +241,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
   const stats = [
     { label: "Campanhas",    value: plan.campaigns.length },
     { label: adSetStatLabel, value: totalAdSets },
-    { label: adStatLabel,    value: totalAds },
+    ...(totalAds > 0 ? [{ label: adStatLabel, value: totalAds }] : []),
     ...(totalFiles > 0 ? [{ label: "Criativos", value: totalFiles }] : []),
   ];
 
@@ -529,7 +529,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                           <AudienceBlock audience={adSet.audience} color={color} />
                         ) : null}
 
-                        {/* Feed note — quando a campanha não tem anúncios manuais (Shopping) */}
+                        {/* Feed note — Shopping/PMax não tem anúncios manuais */}
                         {!labels.hasManualAds && (
                           <View style={{
                             backgroundColor: "#EA433509", borderRadius: 8,
@@ -537,10 +537,11 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                             paddingHorizontal: 12, paddingVertical: 9,
                             flexDirection: "row", gap: 8,
                           }}>
-                            <Text style={{ fontSize: 11 }}>🛍️</Text>
+                            <Text style={{ fontSize: 11 }}>{campaign.googleCampaignType === "Performance Max" ? "⚡" : "🛍️"}</Text>
                             <Text style={{ fontSize: 8.5, color: SUB, flex: 1, lineHeight: 1.55 }}>
-                              Sem anúncios manuais — criativos gerados automaticamente pelo feed do Merchant Center,
-                              filtrados por este grupo.
+                              {campaign.googleCampaignType === "Performance Max"
+                                ? "Grupo de Recursos — contém títulos, descrições, imagens, vídeos e sinais de público. O Google monta os criativos automaticamente."
+                                : "Sem anúncios manuais — criativos gerados automaticamente pelo feed do Merchant Center, filtrados por este grupo."}
                             </Text>
                           </View>
                         )}

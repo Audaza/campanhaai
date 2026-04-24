@@ -10,6 +10,7 @@ import type {
 import StructureBuilder, { makeStructure } from "@/components/StructureBuilder";
 import type { StructurePrefill } from "@/components/StructureBuilder";
 import { PlatformLogo } from "@/components/PlatformLogo";
+import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* ── Constants ── */
 
@@ -267,6 +268,11 @@ export default function Home() {
         const allowed = GOOGLE_OBJECTIVES[prev.googleCampaignType as GoogleCampaignType];
         if (!allowed.includes(prev.objective)) {
           next = { ...next, objective: allowed[0] };
+        }
+        /* Shopping/PMax: sem nível "anúncios" → força a 1 pra manter consistência interna */
+        const labels = getHierarchyLabels("Google Ads", prev.googleCampaignType);
+        if (!labels.hasManualAds && prev.structAds !== 1) {
+          next = { ...next, structAds: 1 };
         }
       }
       return next;
@@ -1001,30 +1007,32 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     )}
                   </Field>
 
-                  {/* Estrutura — labels adaptados para Google */}
+                  {/* Estrutura — adapta níveis e labels por plataforma/tipo Google */}
                   {(() => {
-                    const adSetLabel = hasGoogle
-                      ? googleAdSetLabel(form.googleCampaignType as GoogleCampaignType)
-                      : "Conjuntos";
-                    const adSetLabelPlural = adSetLabel.endsWith("s") ? adSetLabel : `${adSetLabel}s`;
-                    const adLabel = hasGoogle
-                      ? googleAdLabel(form.googleCampaignType as GoogleCampaignType)
-                      : "Anúncio";
-                    const adLabelPlural = adLabel === "Vídeo" ? "Vídeos" : adLabel === "Produto" ? "Produtos" : "Anúncios";
+                    const primaryPlatform = form.platforms[0];
+                    const labels = primaryPlatform
+                      ? getHierarchyLabels(primaryPlatform, form.googleCampaignType)
+                      : getHierarchyLabels("Facebook", "");
+                    const showAdsLevel = labels.hasManualAds;
                     const nC  = form.platforms.length * form.structCampaigns;
                     const nAs = nC * form.structAdSets;
                     const nAd = nAs * form.structAds;
+                    const steppers: { label: string; key: "structCampaigns" | "structAdSets" | "structAds"; max: number }[] = [
+                      { label:"Campanhas",         key:"structCampaigns", max:5  },
+                      { label:labels.adSetPlural,  key:"structAdSets",    max:10 },
+                    ];
+                    if (showAdsLevel) {
+                      steppers.push({ label:labels.adPlural, key:"structAds", max:10 });
+                    }
+                    const hintText = hasGoogle
+                      ? showAdsLevel
+                        ? `${labels.adSetPlural.toLowerCase()} e ${labels.adPlural.toLowerCase()} por campanha — nomenclatura do Google ${form.googleCampaignType}`
+                        : `${labels.adSetPlural.toLowerCase()} por campanha — ${form.googleCampaignType} não tem anúncios manuais`
+                      : "Define quantas campanhas, conjuntos e anúncios serão criados por plataforma";
                     return (
-                      <Field label="Estrutura da campanha"
-                        hint={hasGoogle
-                          ? `Define quantas campanhas, ${adSetLabelPlural.toLowerCase()} e ${adLabelPlural.toLowerCase()} serão criados`
-                          : "Define quantas campanhas, conjuntos e anúncios serão criados por plataforma"}>
+                      <Field label="Estrutura da campanha" hint={hintText}>
                         <div style={{ display:"flex", flexWrap:"wrap", gap:16 }}>
-                          {([
-                            { label:"Campanhas",     key:"structCampaigns" as const, max:5 },
-                            { label:adSetLabelPlural, key:"structAdSets"    as const, max:10 },
-                            { label:adLabelPlural,    key:"structAds"       as const, max:10 },
-                          ]).map(row=>(
+                          {steppers.map(row => (
                             <div key={row.key} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}>
                               <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
                                 {row.label}
@@ -1039,7 +1047,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                         </div>
                         {form.platforms.length > 0 && (
                           <p style={{ fontSize:12, color:"var(--muted)", margin:0 }}>
-                            → {nC} campanha{nC>1?"s":""} · {nAs} {adSetLabelPlural.toLowerCase()}{nAs>1?"":""} · {nAd} {adLabelPlural.toLowerCase()}{nAd>1?"":""}
+                            → {nC} campanha{nC>1?"s":""} · {nAs} {(nAs === 1 ? labels.adSet : labels.adSetPlural).toLowerCase()}
+                            {showAdsLevel ? ` · ${nAd} ${(nAd === 1 ? labels.ad : labels.adPlural).toLowerCase()}` : ""}
                           </p>
                         )}
                       </Field>
