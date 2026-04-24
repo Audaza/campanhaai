@@ -664,7 +664,6 @@ function AdCard({ ad, platform, googleCampaignType, aiContext, adSetAudience, on
       {/* Google Ads text-only (Pesquisa/Shopping/Vídeo-YouTube): só copy, sem upload */}
       {isGoogleTextOnly ? (
         <div>
-          <SbLabel>{copyLabel}</SbLabel>
           {googleCampaignType === "Pesquisa" ? (
             <ResponsiveSearchAdBuilder
               value={ad.copy}
@@ -672,8 +671,11 @@ function AdCard({ ad, platform, googleCampaignType, aiContext, adSetAudience, on
               context={aiContext ? { ...aiContext, keywords: adSetAudience || aiContext.keywords } : undefined}
             />
           ) : (
-            <SbInput value={ad.copy} placeholder={copyPlaceholder}
-              onChange={v=>onUpdate({copy:v})} multiline/>
+            <>
+              <SbLabel>{copyLabel}</SbLabel>
+              <SbInput value={ad.copy} placeholder={copyPlaceholder}
+                onChange={v=>onUpdate({copy:v})} multiline/>
+            </>
           )}
           {googleCampaignType === "Vídeo/YouTube" && (
             <p style={{ fontSize:11, color:"var(--muted)", marginTop:6, lineHeight:1.5 }}>
