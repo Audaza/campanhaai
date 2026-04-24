@@ -884,30 +884,32 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </>
                   )}
 
-                  {/* Objetivo */}
-                  <Field label="Objetivo principal"
-                    hint={hasGoogle && form.googleCampaignType ? `Objetivos suportados por ${form.googleCampaignType}` : undefined}>
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-                      {availableObjectives.map(obj => {
-                        const active = form.objective===obj.value;
-                        return (
-                          <button key={obj.value} type="button"
-                            className={`obj-card${active?" active":""}`}
-                            onClick={()=>set("objective",obj.value)}
-                            style={{
-                              border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
-                              background: active ? "var(--primary-dim)" : "var(--surface-2)",
-                            }}
-                          >
-                            <div style={{ fontSize:22, marginBottom:5 }}>{obj.emoji}</div>
-                            <div style={{ fontSize:11, fontWeight:600, color: active?"var(--primary)":"var(--text-sub)", lineHeight:1.3 }}>
-                              {obj.label}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </Field>
+                  {/* Objetivo — só após selecionar plataforma */}
+                  {form.platforms.length > 0 && (
+                    <Field label="Objetivo principal"
+                      hint={hasGoogle && form.googleCampaignType ? `Objetivos suportados por ${form.googleCampaignType}` : undefined}>
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+                        {availableObjectives.map(obj => {
+                          const active = form.objective===obj.value;
+                          return (
+                            <button key={obj.value} type="button"
+                              className={`obj-card${active?" active":""}`}
+                              onClick={()=>set("objective",obj.value)}
+                              style={{
+                                border:`1.5px solid ${active?"var(--primary)":"var(--border-input)"}`,
+                                background: active ? "var(--primary-dim)" : "var(--surface-2)",
+                              }}
+                            >
+                              <div style={{ fontSize:22, marginBottom:5 }}>{obj.emoji}</div>
+                              <div style={{ fontSize:11, fontWeight:600, color: active?"var(--primary)":"var(--text-sub)", lineHeight:1.3 }}>
+                                {obj.label}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+                  )}
 
                   {/* Orçamento */}
                   <Field label="Orçamento">
