@@ -93,17 +93,11 @@ function PageHeader({ client, section }: { client: string; section: string }) {
           }}>
             <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.surface }}>C</Text>
           </View>
-          <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text, letterSpacing: -0.2 }}>
-            Campanha Tráfego · Audaza
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.brand, letterSpacing: 0.9 }}>
             {section.toUpperCase()}
           </Text>
-          <View style={{ width: 1, height: 12, backgroundColor: C.border }} />
-          <Text style={{ fontSize: T.tiny, color: C.muted }}>{trunc(client, 36)}</Text>
         </View>
+        <Text style={{ fontSize: T.tiny, color: C.muted }}>{trunc(client, 48)}</Text>
       </View>
     </View>
   );
@@ -510,11 +504,11 @@ function TimelinePhaseCard({
   isFirst: boolean;
   isLast: boolean;
 }) {
-  const accent = isFirst ? C.brand : isLast ? C.accent : C.soft;
-  const nodeBg = isFirst ? C.brand : isLast ? C.accent : C.surface;
+  const accent = isFirst || isLast ? C.brand : C.soft;
+  const nodeBg = isFirst || isLast ? C.brand : C.surface;
   const nodeClr = isFirst || isLast ? C.surface : C.muted;
-  const pillBg = isFirst ? C.brandSoft : isLast ? C.accentBg : C.surface;
-  const pillClr = isFirst ? C.brand : isLast ? C.accent : C.subtext;
+  const pillBg = isFirst || isLast ? C.brandSoft : C.surface;
+  const pillClr = isFirst || isLast ? C.brand : C.subtext;
 
   return (
     <View wrap={false} style={{
