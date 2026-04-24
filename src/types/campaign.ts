@@ -91,6 +91,7 @@ export interface CampaignFormData {
   googleShoppingCategories: string;
   googleVideoFormat:        string;
   googleDemandGenFormat:    string;
+  googleLanguage:           string;
   youtubeVideoUrl:          string;
 }
 
@@ -152,6 +153,7 @@ export interface GoogleAdsPlanConfig {
   videoFormat?:       string;
   demandGenFormat?:   string;
   youtubeVideoUrl?:   string;
+  language?:          string;
 }
 
 export interface CampaignPlan {

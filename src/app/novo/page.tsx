@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type {
   CampaignFormData, Objective, Platform, GoogleCampaignType,
@@ -65,6 +65,40 @@ const GOOGLE_DEMAND_GEN_FORMATS = [
   "Vídeo",
 ];
 
+/* Objetivos válidos por tipo de campanha Google */
+const GOOGLE_OBJECTIVES: Record<GoogleCampaignType, Objective[]> = {
+  "Pesquisa":        ["Vendas Diretas", "Geração de Leads", "Tráfego"],
+  "Display":         ["Vendas Diretas", "Geração de Leads", "Tráfego", "Reconhecimento de Marca"],
+  "Vídeo/YouTube":   ["Reconhecimento de Marca", "Engajamento", "Tráfego"],
+  "Shopping":        ["Vendas Diretas"],
+  "Performance Max": ["Vendas Diretas", "Geração de Leads", "Tráfego"],
+  "Demand Gen":      ["Vendas Diretas", "Geração de Leads", "Reconhecimento de Marca", "Tráfego"],
+};
+
+/* Google Ads sempre define orçamento no nível da campanha */
+const GOOGLE_BUDGET_LEVEL: "campaign" = "campaign";
+
+/* Tipos Google em que público demográfico é só exclusão (keywords/feed comandam) */
+const GOOGLE_DEMO_EXCLUSION_ONLY: GoogleCampaignType[] = ["Pesquisa", "Shopping"];
+
+/* Idiomas comuns para Google Ads */
+const GOOGLE_LANGUAGES = [
+  "Português", "Inglês", "Espanhol", "Todos",
+];
+
+/* Label das "unidades" de estrutura dentro de uma campanha Google */
+function googleAdSetLabel(type: GoogleCampaignType | ""): string {
+  if (type === "Vídeo/YouTube")   return "Grupo de Vídeos";
+  if (type === "Shopping")        return "Grupo de Produtos";
+  if (type === "Performance Max") return "Grupo de Recursos";
+  return "Grupo de Anúncios";
+}
+function googleAdLabel(type: GoogleCampaignType | ""): string {
+  if (type === "Vídeo/YouTube") return "Vídeo";
+  if (type === "Shopping")      return "Produto";
+  return "Anúncio";
+}
+
 const DURATIONS: Duration[] = ["15 dias","30 dias","60 dias","90 dias"];
 const GENDERS: Gender[]     = ["Todos","Masculino","Feminino"];
 const STEP_LABELS            = ["Cliente","Campanha","Público","Estrutura"];
@@ -91,6 +125,7 @@ const INITIAL: CampaignFormData = {
   googleShoppingCategories: "",
   googleVideoFormat:        "",
   googleDemandGenFormat:    "",
+  googleLanguage:           "Português",
   youtubeVideoUrl:          "",
 };
 
@@ -207,6 +242,37 @@ export default function Home() {
   const [error,   setError]   = useState("");
   const [form,    setForm]    = useState<CampaignFormData>(INITIAL);
 
+  const hasGoogle = form.platforms.includes("Google Ads");
+
+  /* Objetivos disponíveis — adapta conforme plataforma + tipo Google */
+  const availableObjectives = useMemo(() => {
+    if (hasGoogle && form.googleCampaignType) {
+      const allowed = GOOGLE_OBJECTIVES[form.googleCampaignType as GoogleCampaignType];
+      return OBJECTIVES.filter(o => allowed.includes(o.value));
+    }
+    return OBJECTIVES;
+  }, [hasGoogle, form.googleCampaignType]);
+
+  /* Ajustes automáticos quando Google Ads entra em jogo */
+  useEffect(() => {
+    if (!hasGoogle) return;
+    setForm(prev => {
+      let next = prev;
+      /* Google sempre no nível campanha */
+      if (prev.budgetLevel !== GOOGLE_BUDGET_LEVEL) {
+        next = { ...next, budgetLevel: GOOGLE_BUDGET_LEVEL };
+      }
+      /* Objetivo precisa ser válido para o tipo Google */
+      if (prev.googleCampaignType) {
+        const allowed = GOOGLE_OBJECTIVES[prev.googleCampaignType as GoogleCampaignType];
+        if (!allowed.includes(prev.objective)) {
+          next = { ...next, objective: allowed[0] };
+        }
+      }
+      return next;
+    });
+  }, [hasGoogle, form.googleCampaignType]);
+
   function set<K extends keyof CampaignFormData>(k: K, v: CampaignFormData[K]) {
     setForm(p => ({ ...p, [k]: v }));
   }
@@ -314,6 +380,7 @@ CAMPANHA:
 ${d.platforms.includes("Google Ads") ? `
 GOOGLE ADS:
 - Tipo de campanha: ${d.googleCampaignType || "não definido"}
+- Idioma: ${d.googleLanguage || "Português"}
 ${d.googleCampaignType === "Pesquisa" ? `- Palavras-chave: ${d.googleKeywords.trim() || "não informado"}
 - Palavras-chave negativas: ${d.googleNegativeKeywords.trim() || "não informado"}
 - URL de destino: ${d.googleFinalUrl.trim() || "não informado"}` : ""}
@@ -407,6 +474,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
             videoFormat:        d.googleVideoFormat || undefined,
             demandGenFormat:    d.googleDemandGenFormat || undefined,
             youtubeVideoUrl:    d.youtubeVideoUrl.trim() || undefined,
+            language:           d.googleLanguage || undefined,
           }
         : undefined;
 
@@ -798,9 +866,10 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                   )}
 
                   {/* Objetivo */}
-                  <Field label="Objetivo principal">
+                  <Field label="Objetivo principal"
+                    hint={hasGoogle && form.googleCampaignType ? `Objetivos suportados por ${form.googleCampaignType}` : undefined}>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
-                      {OBJECTIVES.map(obj => {
+                      {availableObjectives.map(obj => {
                         const active = form.objective===obj.value;
                         return (
                           <button key={obj.value} type="button"
@@ -849,26 +918,39 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </div>
                   </Field>
 
-                  {/* Budget level toggle */}
-                  <Field label="Orçamento definido por">
-                    <div style={{ display:"inline-flex", background:"var(--surface-2)", borderRadius:10, padding:3, border:"1px solid var(--border-mid)", width:"fit-content" }}>
-                      {([
-                        { v:"adset"    as BudgetLevel, label:"Conjunto de anúncios" },
-                        { v:"campaign" as BudgetLevel, label:"Campanha" },
-                      ]).map(opt=>(
-                        <button key={opt.v} type="button" onClick={()=>set("budgetLevel",opt.v)} style={{
-                          padding:"7px 16px", borderRadius:8, fontSize:13, fontWeight:500,
-                          cursor:"pointer", border:"none", fontFamily:"inherit",
-                          background: form.budgetLevel===opt.v ? "var(--surface)" : "transparent",
-                          color: form.budgetLevel===opt.v ? "var(--text)" : "var(--muted)",
-                          boxShadow: form.budgetLevel===opt.v ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
-                          transition:"all 0.15s",
-                        }}>
-                          {opt.label}
-                        </button>
-                      ))}
+                  {/* Budget level toggle — escondido para Google (sempre nível Campanha) */}
+                  {!hasGoogle ? (
+                    <Field label="Orçamento definido por">
+                      <div style={{ display:"inline-flex", background:"var(--surface-2)", borderRadius:10, padding:3, border:"1px solid var(--border-mid)", width:"fit-content" }}>
+                        {([
+                          { v:"adset"    as BudgetLevel, label:"Conjunto de anúncios" },
+                          { v:"campaign" as BudgetLevel, label:"Campanha" },
+                        ]).map(opt=>(
+                          <button key={opt.v} type="button" onClick={()=>set("budgetLevel",opt.v)} style={{
+                            padding:"7px 16px", borderRadius:8, fontSize:13, fontWeight:500,
+                            cursor:"pointer", border:"none", fontFamily:"inherit",
+                            background: form.budgetLevel===opt.v ? "var(--surface)" : "transparent",
+                            color: form.budgetLevel===opt.v ? "var(--text)" : "var(--muted)",
+                            boxShadow: form.budgetLevel===opt.v ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
+                            transition:"all 0.15s",
+                          }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+                  ) : (
+                    <div style={{
+                      background:"rgba(234,67,53,0.06)", borderRadius:10, padding:"10px 14px",
+                      border:"1px solid rgba(234,67,53,0.15)",
+                      display:"flex", gap:10, alignItems:"flex-start",
+                    }}>
+                      <span style={{ fontSize:14 }}>ℹ️</span>
+                      <p style={{ fontSize:12, color:"#9a2d24", margin:0, lineHeight:1.5 }}>
+                        No Google Ads o orçamento é sempre definido no nível da <strong>campanha</strong>.
+                      </p>
                     </div>
-                  </Field>
+                  )}
 
                   {/* Período */}
                   <Field label="Período da campanha">
@@ -918,44 +1000,102 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     )}
                   </Field>
 
-                  {/* Estrutura */}
-                  <Field label="Estrutura da campanha"
-                    hint="Define quantas campanhas, conjuntos e anúncios serão criados por plataforma">
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:16 }}>
-                      {([
-                        { label:"Campanhas", key:"structCampaigns" as const, max:5 },
-                        { label:"Conjuntos", key:"structAdSets"    as const, max:10 },
-                        { label:"Anúncios",  key:"structAds"       as const, max:10 },
-                      ]).map(row=>(
-                        <div key={row.key} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}>
-                          <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
-                            {row.label}
-                          </span>
-                          <Stepper
-                            value={form[row.key] as number}
-                            min={1} max={row.max}
-                            onChange={v=>set(row.key, v as CampaignFormData[typeof row.key])}
-                          />
+                  {/* Estrutura — labels adaptados para Google */}
+                  {(() => {
+                    const adSetLabel = hasGoogle
+                      ? googleAdSetLabel(form.googleCampaignType as GoogleCampaignType)
+                      : "Conjuntos";
+                    const adSetLabelPlural = adSetLabel.endsWith("s") ? adSetLabel : `${adSetLabel}s`;
+                    const adLabel = hasGoogle
+                      ? googleAdLabel(form.googleCampaignType as GoogleCampaignType)
+                      : "Anúncio";
+                    const adLabelPlural = adLabel === "Vídeo" ? "Vídeos" : adLabel === "Produto" ? "Produtos" : "Anúncios";
+                    const nC  = form.platforms.length * form.structCampaigns;
+                    const nAs = nC * form.structAdSets;
+                    const nAd = nAs * form.structAds;
+                    return (
+                      <Field label="Estrutura da campanha"
+                        hint={hasGoogle
+                          ? `Define quantas campanhas, ${adSetLabelPlural.toLowerCase()} e ${adLabelPlural.toLowerCase()} serão criados`
+                          : "Define quantas campanhas, conjuntos e anúncios serão criados por plataforma"}>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:16 }}>
+                          {([
+                            { label:"Campanhas",     key:"structCampaigns" as const, max:5 },
+                            { label:adSetLabelPlural, key:"structAdSets"    as const, max:10 },
+                            { label:adLabelPlural,    key:"structAds"       as const, max:10 },
+                          ]).map(row=>(
+                            <div key={row.key} style={{ display:"flex", flexDirection:"column", gap:5, alignItems:"center" }}>
+                              <span style={{ fontSize:11, fontWeight:600, color:"var(--muted)", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                                {row.label}
+                              </span>
+                              <Stepper
+                                value={form[row.key] as number}
+                                min={1} max={row.max}
+                                onChange={v=>set(row.key, v as CampaignFormData[typeof row.key])}
+                              />
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                    {form.platforms.length > 0 && (
-                      <p style={{ fontSize:12, color:"var(--muted)", margin:0 }}>
-                        → {form.platforms.length * form.structCampaigns} campanha{form.platforms.length * form.structCampaigns>1?"s":""} ·{" "}
-                        {form.platforms.length * form.structCampaigns * form.structAdSets} conjunto{form.platforms.length * form.structCampaigns * form.structAdSets>1?"s":""} ·{" "}
-                        {form.platforms.length * form.structCampaigns * form.structAdSets * form.structAds} anúncio{form.platforms.length * form.structCampaigns * form.structAdSets * form.structAds>1?"s":""}
-                      </p>
-                    )}
-                  </Field>
+                        {form.platforms.length > 0 && (
+                          <p style={{ fontSize:12, color:"var(--muted)", margin:0 }}>
+                            → {nC} campanha{nC>1?"s":""} · {nAs} {adSetLabelPlural.toLowerCase()}{nAs>1?"":""} · {nAd} {adLabelPlural.toLowerCase()}{nAd>1?"":""}
+                          </p>
+                        )}
+                      </Field>
+                    );
+                  })()}
                 </div>
               )}
 
               {/* ── Step 3: Público ── */}
-              {step === 3 && (
+              {step === 3 && (() => {
+                const gType = form.googleCampaignType as GoogleCampaignType | "";
+                const demoExclusionOnly = hasGoogle && gType && GOOGLE_DEMO_EXCLUSION_ONLY.includes(gType);
+                const subtitle = hasGoogle
+                  ? gType === "Pesquisa"
+                    ? "No Google Pesquisa, as palavras-chave são o targeting principal. Os campos abaixo são camadas adicionais."
+                    : gType === "Shopping"
+                      ? "No Shopping, o feed de produtos define quem vê o anúncio. Os campos abaixo são refinamentos opcionais."
+                      : "Defina o público que o Google deve alcançar."
+                  : "Quem deve ver os anúncios?";
+                return (
                 <div style={{ display:"flex", flexDirection:"column", gap:22 }}>
-                  <CardTitle title="Sobre o público" sub="Quem deve ver os anúncios?"/>
+                  <CardTitle title="Sobre o público" sub={subtitle}/>
 
-                  <Field label="Faixa etária">
+                  {/* Localização — sempre primeiro */}
+                  <Field label="Localização">
+                    <input className="ap-input" placeholder="Ex: São Paulo, SP · Brasil"
+                      value={form.location} onChange={e=>set("location",e.target.value)}/>
+                  </Field>
+
+                  {/* Idioma — só Google */}
+                  {hasGoogle && (
+                    <Field label="Idioma" hint="Idioma dos usuários que o Google deve alcançar">
+                      <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                        {GOOGLE_LANGUAGES.map(lang => {
+                          const active = form.googleLanguage === lang;
+                          return (
+                            <button key={lang} type="button" className="ap-pill"
+                              onClick={() => set("googleLanguage", lang)}
+                              style={{
+                                border:`1.5px solid ${active?"#EA4335":"var(--border-input)"}`,
+                                background: active ? "rgba(234,67,53,0.08)" : "transparent",
+                                color: active ? "#C5221F" : "var(--muted)",
+                                fontWeight: active ? 600 : 500,
+                                fontSize:12,
+                              }}
+                            >{lang}</button>
+                          );
+                        })}
+                      </div>
+                    </Field>
+                  )}
+
+                  <Field
+                    label={demoExclusionOnly ? "Faixa etária (opcional · só exclusões)" : "Faixa etária"}
+                    optional={!!demoExclusionOnly}
+                    hint={demoExclusionOnly ? `Em ${gType}, a idade só funciona para excluir faixas que não interessam.` : undefined}
+                  >
                     <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                       <input className="ap-input" type="number" min="13" max="65"
                         style={{ textAlign:"center" as const }}
@@ -968,7 +1108,10 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </div>
                   </Field>
 
-                  <Field label="Gênero">
+                  <Field
+                    label={demoExclusionOnly ? "Gênero (opcional · só exclusões)" : "Gênero"}
+                    optional={!!demoExclusionOnly}
+                  >
                     <div style={{ display:"flex", gap:8 }}>
                       {GENDERS.map(g=>{
                         const active = form.gender===g;
@@ -987,13 +1130,12 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </div>
                   </Field>
 
-                  <Field label="Localização">
-                    <input className="ap-input" placeholder="Ex: São Paulo, SP · Brasil"
-                      value={form.location} onChange={e=>set("location",e.target.value)}/>
-                  </Field>
-
-                  {/* Tipo de público */}
-                  <Field label="Tipo de público">
+                  {/* Tipo de público — renomeado para Google */}
+                  <Field
+                    label={hasGoogle ? "Camadas de audiência (opcional)" : "Tipo de público"}
+                    optional={!!hasGoogle}
+                    hint={hasGoogle ? "Audiências adicionam uma camada de refinamento — o Google otimiza dentro do público escolhido." : undefined}
+                  >
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
                       {([
                         { v:"aberto"        as AudienceType, emoji:"🌐", title:"Aberto",       sub:"Sem segmentação por interesse" },
@@ -1095,7 +1237,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     </Field>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* ── Step 4: Estrutura ── */}
               {step === 4 && (

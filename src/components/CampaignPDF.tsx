@@ -171,6 +171,7 @@ function GoogleAdsConfigCard({ config }: { config: NonNullable<CampaignPlan["goo
 
       {/* Content — campos por tipo */}
       <View style={{ paddingHorizontal: 22, paddingVertical: 14, gap: 10 }}>
+        <GoogleConfigRow label="Idioma"               value={config.language} />
         <GoogleConfigRow label="Palavras-chave"       value={config.keywords} />
         <GoogleConfigRow label="Kw negativas"         value={config.negativeKeywords} />
         <GoogleConfigRow label="URL destino"          value={config.finalUrl} />

@@ -507,6 +507,7 @@ export default function ResultadoPage() {
                 const g = plan.googleAdsConfig!;
                 const gcolor = "#EA4335";
                 const rows: { label: string; value?: string }[] = [
+                  { label: "Idioma",                value: g.language },
                   { label: "Palavras-chave",        value: g.keywords },
                   { label: "Kw negativas",          value: g.negativeKeywords },
                   { label: "URL destino",           value: g.finalUrl },
