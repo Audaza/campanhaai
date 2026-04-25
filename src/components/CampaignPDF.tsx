@@ -1,9 +1,10 @@
 import {
   Document, Page, Text, View, Image,
-  Svg, Defs, LinearGradient, Stop, Rect,
+  Svg, Defs, LinearGradient, Stop, Rect, Path, Circle, Line,
 } from "@react-pdf/renderer";
 import { CampaignPlan } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
+import { parseRSA } from "@/lib/rsaFormat";
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS — sistema único e consistente
@@ -57,6 +58,67 @@ function platGlyph(p: string): string {
 
 function trunc(s: string, n: number): string {
   return s && s.length > n ? s.substring(0, n) + "…" : (s || "");
+}
+
+/** Trunca strings que são URLs preservando início significativo */
+function truncSmart(s: string, n: number): string {
+  if (!s) return "";
+  if (s.length <= n) return s;
+  // Se for URL, mostra só o domínio + caminho curto
+  const isUrl = /^https?:\/\//i.test(s) || /\.[a-z]{2,}\//i.test(s);
+  if (isUrl) {
+    try {
+      const u = new URL(s.startsWith("http") ? s : `https://${s}`);
+      const host = u.hostname.replace(/^www\./, "");
+      const path = u.pathname.replace(/\/$/, "");
+      const compact = path ? `${host}${path}` : host;
+      return compact.length > n ? compact.substring(0, n - 1) + "…" : compact;
+    } catch { /* fallback abaixo */ }
+  }
+  return s.substring(0, n - 1) + "…";
+}
+
+/** Ícones inline em SVG (renderizam corretamente em qualquer fonte) */
+function PdfIcon({ kind, color, size = 10 }: { kind: string; color: string; size?: number }) {
+  const stroke = color, sw = 1.4;
+  switch (kind) {
+    case "objetivo": // alvo concêntrico
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Circle cx={8} cy={8} r={6.5} fill="none" stroke={stroke} strokeWidth={sw} />
+          <Circle cx={8} cy={8} r={3.2} fill="none" stroke={stroke} strokeWidth={sw} />
+          <Circle cx={8} cy={8} r={1}   fill={color} />
+        </Svg>
+      );
+    case "periodo": // calendário
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Rect x={2} y={3.5} width={12} height={10.5} rx={1.5} fill="none" stroke={stroke} strokeWidth={sw} />
+          <Line x1={2} y1={6.5} x2={14} y2={6.5} stroke={stroke} strokeWidth={sw} />
+          <Line x1={5} y1={2}   x2={5}  y2={5}   stroke={stroke} strokeWidth={sw} />
+          <Line x1={11} y1={2}  x2={11} y2={5}   stroke={stroke} strokeWidth={sw} />
+        </Svg>
+      );
+    case "localizacao": // pin
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Path d="M8 1.5C5 1.5 3 3.5 3 6.5C3 10 8 14.5 8 14.5C8 14.5 13 10 13 6.5C13 3.5 11 1.5 8 1.5Z"
+            fill="none" stroke={stroke} strokeWidth={sw} />
+          <Circle cx={8} cy={6.3} r={1.7} fill={color} />
+        </Svg>
+      );
+    case "investimento": // moeda $
+      return (
+        <Svg width={size} height={size} viewBox="0 0 16 16">
+          <Circle cx={8} cy={8} r={6.5} fill="none" stroke={stroke} strokeWidth={sw} />
+          <Path d="M9.8 6.3C9.4 5.7 8.7 5.3 8 5.3C6.9 5.3 6 5.9 6 6.7C6 7.5 6.9 7.8 8 8C9.1 8.2 10 8.6 10 9.4C10 10.2 9.1 10.7 8 10.7C7.3 10.7 6.5 10.4 6.1 9.7"
+            fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
+          <Line x1={8} y1={4.3} x2={8} y2={5.5} stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
+          <Line x1={8} y1={10.7} x2={8} y2={11.8} stroke={stroke} strokeWidth={sw} strokeLinecap="round" />
+        </Svg>
+      );
+    default: return null;
+  }
 }
 function cleanCopy(text: string): string {
   if (!text) return "";
@@ -335,6 +397,90 @@ function GoogleConfigCard({ config }: { config: NonNullable<CampaignPlan["google
   );
 }
 
+/** Renderiza um RSA parseado em estrutura visual (títulos + descrições) */
+function RSAStructuredPDF({ copy, color }: { copy: string; color: string }) {
+  const { titles, descriptions } = parseRSA(copy);
+  if (!titles.length && !descriptions.length) {
+    return (
+      <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.5 }}>
+        {copy}
+      </Text>
+    );
+  }
+  return (
+    <View style={{ gap: 8 }}>
+      {titles.length > 0 && (
+        <View>
+          <Text style={{
+            fontSize: T.micro, fontFamily: "Helvetica-Bold",
+            color: color, letterSpacing: 0.9, marginBottom: 4,
+          }}>
+            TÍTULOS · {titles.length}
+          </Text>
+          <View style={{ gap: 3 }}>
+            {titles.map((t, i) => (
+              <View key={i} style={{ flexDirection: "row", gap: 6, alignItems: "flex-start" }}>
+                <View style={{
+                  width: 14, height: 14, borderRadius: 4,
+                  backgroundColor: color + "14",
+                  alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}>
+                  <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color }}>
+                    {i + 1}
+                  </Text>
+                </View>
+                <Text style={{
+                  fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.45,
+                  paddingTop: 1.5,
+                }}>
+                  {trunc(t, 60)}
+                </Text>
+                <Text style={{
+                  fontSize: 7.5, color: t.length > 30 ? "#dc2626" : C.muted,
+                  paddingTop: 2.5,
+                }}>
+                  {t.length}/30
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+      {descriptions.length > 0 && (
+        <View>
+          <Text style={{
+            fontSize: T.micro, fontFamily: "Helvetica-Bold",
+            color: color, letterSpacing: 0.9, marginBottom: 4,
+          }}>
+            DESCRIÇÕES · {descriptions.length}
+          </Text>
+          <View style={{ gap: 4 }}>
+            {descriptions.map((d, i) => (
+              <View key={i} style={{
+                paddingHorizontal: 8, paddingVertical: 5,
+                backgroundColor: C.bg, borderRadius: 4,
+                borderLeftWidth: 2, borderLeftColor: color,
+              }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+                  <Text style={{ fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.5 }}>
+                    {d}
+                  </Text>
+                  <Text style={{
+                    fontSize: 7.5, color: d.length > 90 ? "#dc2626" : C.muted,
+                    flexShrink: 0,
+                  }}>
+                    {d.length}/90
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 /** Card de um Anúncio — wrap={false} para nunca cortar */
 function AdCard({
   ad, color, hideName,
@@ -345,6 +491,7 @@ function AdCard({
 }) {
   const hasImage = !!(ad.fileDataUrl && ad.fileType === "image");
   const hasCopy  = !!ad.copy;
+  const isRSA    = ad.format === "Responsivo de Pesquisa";
   return (
     <View wrap={false} style={{
       backgroundColor: C.surface, borderRadius: 7,
@@ -384,16 +531,20 @@ function AdCard({
           )}
         </View>
       ) : hasCopy ? (
-        <View>
-          <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.6 }}>
-            {cleanCopy(ad.copy)}
-          </Text>
-          {extractPostDate(ad.copy) && (
-            <Text style={{ fontSize: T.micro, color: C.muted, marginTop: 5 }}>
-              Publicado em {extractPostDate(ad.copy)}
+        isRSA ? (
+          <RSAStructuredPDF copy={ad.copy} color={color} />
+        ) : (
+          <View>
+            <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.6 }}>
+              {cleanCopy(ad.copy)}
             </Text>
-          )}
-        </View>
+            {extractPostDate(ad.copy) && (
+              <Text style={{ fontSize: T.micro, color: C.muted, marginTop: 5 }}>
+                Publicado em {extractPostDate(ad.copy)}
+              </Text>
+            )}
+          </View>
+        )
       ) : null}
 
       {ad.fileName && ad.fileType === "video" && (
@@ -672,16 +823,16 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
               PLANEJAMENTO ESTRATÉGICO DE TRÁFEGO PAGO
             </Text>
             <Text style={{
-              fontSize: 44, fontFamily: "Helvetica-Bold", color: C.surface,
-              letterSpacing: -1.5, lineHeight: 1.05, marginBottom: 10,
+              fontSize: 38, fontFamily: "Helvetica-Bold", color: C.surface,
+              letterSpacing: -1.2, lineHeight: 1.08, marginBottom: 10,
             }}>
-              {trunc(plan.overview.clientName, 34)}
+              {truncSmart(plan.overview.clientName, 38)}
             </Text>
             <Text style={{
               fontSize: T.h2, color: "rgba(255,255,255,0.85)",
-              letterSpacing: -0.2, lineHeight: 1.4, maxWidth: 420,
+              letterSpacing: -0.2, lineHeight: 1.4, maxWidth: 460,
             }}>
-              {plan.overview.product}
+              {truncSmart(plan.overview.product, 80)}
             </Text>
 
             {/* Divisor fino */}
@@ -786,10 +937,10 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                   CLIENTE
                 </Text>
                 <Text style={{ fontSize: T.h1, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.4 }}>
-                  {trunc(plan.overview.clientName, 40)}
+                  {truncSmart(plan.overview.clientName, 38)}
                 </Text>
                 <Text style={{ fontSize: T.small, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
-                  {trunc(plan.overview.product, 70)}
+                  {truncSmart(plan.overview.product, 70)}
                 </Text>
               </View>
             </View>
@@ -829,31 +980,25 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
             <View style={{ flexDirection: "row" }}>
               {(() => {
                 const cells: { eyebrow: string; value: string; icon: string }[] = [
-                  { eyebrow: "OBJETIVO",  value: plan.overview.objective,                                  icon: "◎" },
-                  { eyebrow: "PERÍODO",   value: plan.overview.duration,                                   icon: "▱" },
+                  { eyebrow: "OBJETIVO",  value: plan.overview.objective,    icon: "objetivo" },
+                  { eyebrow: "PERÍODO",   value: plan.overview.duration,     icon: "periodo" },
                 ];
                 if (plan.overview.location) {
-                  cells.push({ eyebrow: "LOCALIZAÇÃO", value: trunc(plan.overview.location, 28), icon: "◉" });
+                  cells.push({ eyebrow: "LOCALIZAÇÃO", value: truncSmart(plan.overview.location, 24), icon: "localizacao" });
                 }
                 cells.push({
                   eyebrow: plan.overview.dailyBudget ? "INVEST. DIÁRIO" : "INVESTIMENTO",
                   value:   plan.overview.dailyBudget || plan.overview.totalBudget,
-                  icon:    "$",
+                  icon:    "investimento",
                 });
                 return cells.map((c, i) => (
                   <View key={i} style={{
-                    flex: 1, paddingVertical: 12, paddingHorizontal: 12,
+                    flex: 1, paddingVertical: 11, paddingHorizontal: 11,
                     borderRightWidth: i < cells.length - 1 ? 1 : 0,
                     borderRightColor: C.border,
                   }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5 }}>
-                      <View style={{
-                        width: 14, height: 14, borderRadius: 4,
-                        backgroundColor: C.brandSoft,
-                        alignItems: "center", justifyContent: "center",
-                      }}>
-                        <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.brand }}>{c.icon}</Text>
-                      </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 5 }}>
+                      <PdfIcon kind={c.icon} color={C.brand} size={11} />
                       <Text style={{
                         fontSize: T.micro, fontFamily: "Helvetica-Bold",
                         color: C.muted, letterSpacing: 0.9,
