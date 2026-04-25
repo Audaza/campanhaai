@@ -427,12 +427,32 @@ ${d.audienceType === "remarketing" ? `- Fonte do remarketing: ${d.remarketingSou
 
 IMPORTANTE: Retorne SOMENTE um JSON válido, sem markdown, com estes campos:
 
-{"overview":{"clientName":"${d.clientName}","product":"${d.product}","totalBudget":"${totalValue || "calculado"}","dailyBudget":"${dailyValue}","duration":"${d.duration}","objective":"${d.objective}","platforms":${JSON.stringify(d.platforms)},"summary":"resumo estratégico 2-3 frases"},"budgetDistribution":[{"platform":"plataforma","amount":"valor em R$","percentage":numero_inteiro,"allocation":"como distribuído"}],"timeline":[{"phase":"nome","duration":"ex: Dias 1-7","actions":["ação 1","ação 2","ação 3"]}],"creatives":[{"format":"Imagem, Vídeo, Carrossel ou Stories","platform":"plataforma","headline":"título impactante","body":"texto principal","cta":"botão de ação"}],"recommendations":["rec1","rec2","rec3","rec4"]}
+{"overview":{"clientName":"${d.clientName}","product":"${d.product}","totalBudget":"${totalValue || "calculado"}","dailyBudget":"${dailyValue}","duration":"${d.duration}","objective":"${d.objective}","platforms":${JSON.stringify(d.platforms)},"summary":"resumo estratégico 2-3 frases"},"budgetDistribution":[{"platform":"plataforma","amount":"valor em R$","percentage":numero_inteiro,"allocation":"como distribuído","metrics":{"impressions":"180.000","reach":"120.000","clicks":"3.500","cpm":"R$ 12,80","cpc":"R$ 0,85","ctr":"2.9","conversions":"85","leads":"85","cpa":"R$ 35,30","views":"45.000","cpv":"R$ 0,02"}}],"timeline":[{"phase":"nome","duration":"ex: Dias 1-7","actions":["ação 1","ação 2","ação 3"]}],"creatives":[{"format":"Imagem, Vídeo, Carrossel ou Stories","platform":"plataforma","headline":"título impactante","body":"texto principal","cta":"botão de ação"}],"recommendations":["rec1","rec2","rec3","rec4"]}
 
 REGRAS:
 - budgetDistribution: 1 entrada por plataforma (total: ${d.platforms.length})
 - timeline: 5 fases: "Data Início","Otimização","Escala","Análise de Desempenho","Análise Final"
 - creatives: 2 por plataforma (total: ${d.platforms.length * 2})
+
+REGRAS DE MÉTRICAS (campo "metrics" em cada budgetDistribution):
+- Sempre: impressions, reach, clicks, cpm, cpc, ctr (use BENCHMARKS reais
+  do mercado brasileiro 2026 para a plataforma + setor + objetivo).
+- Para objetivo "Conversão" ou "Vendas Diretas": INCLUIR conversions e cpa.
+  NÃO incluir leads, views, cpv.
+- Para objetivo "Geração de Leads": INCLUIR leads e cpa (cpa = custo/lead).
+  NÃO incluir conversions, views, cpv.
+- Para objetivo "Tráfego": SÓ impressions, reach, clicks, cpm, cpc, ctr.
+  Omitir os demais.
+- Para objetivo "Engajamento": adicionar views e cpv (se faz sentido p/ a plataforma).
+- Para objetivo "Reconhecimento de Marca": foco em impressions, reach, cpm.
+  Pode adicionar views e cpv se houver vídeo.
+- Formato dos números: pt-BR ("R$ 1.234,56" para moeda; "180.000" para volumes;
+  CTR só o número decimal "2.9").
+- Valores devem ser COERENTES entre si: clicks ≈ impressions × ctr/100;
+  cpc ≈ amount / clicks; cpa ≈ amount / conversions; cpm ≈ amount/impressions×1000.
+- Use ranges realistas: Meta CPC R$0,40–R$3 / Google Pesquisa R$1–R$8 /
+  TikTok R$0,30–R$1,50 / YouTube CPM R$10–R$30.
+- Inclua APENAS os campos relevantes ao objetivo (não preencha campos vazios).
 ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Pesquisa" ? `- Para Google Ads de Pesquisa, os criativos devem usar formato "Responsivo de Pesquisa" e o campo body deve conter 3 títulos (máx 30 caracteres cada) + 2 descrições (máx 90 caracteres cada), separados por ' | '. Sem imagem, sem vídeo.` : ""}
 ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Display" ? `- Para Google Ads de Display, criativos formato "Display Responsivo": headline curta + descrição curta (imagem será inserida manualmente pelo usuário).` : ""}
 ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Vídeo/YouTube" ? `- Para Google Ads de Vídeo/YouTube, criativos formato "Vídeo": descrever angle do vídeo, CTA e frases-chave sobrepostas. O vídeo já foi fornecido: ${d.youtubeVideoUrl || "URL não informada"}.` : ""}
@@ -443,7 +463,7 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getKey()}` },
-        body: JSON.stringify({ model: "gpt-4o", max_tokens: 3500, temperature: 0.7, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } }),
+        body: JSON.stringify({ model: "gpt-4o", max_tokens: 4500, temperature: 0.7, messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } }),
       });
       if (!res.ok) throw new Error();
       const data = await res.json();

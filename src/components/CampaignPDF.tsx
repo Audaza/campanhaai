@@ -2,7 +2,7 @@ import {
   Document, Page, Text, View, Image,
   Svg, Defs, LinearGradient, Stop, Rect,
 } from "@react-pdf/renderer";
-import { CampaignPlan } from "@/types/campaign";
+import { CampaignPlan, PerformanceMetrics } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* ═══════════════════════════════════════════════════════
@@ -242,6 +242,72 @@ function KeyValue({ label, value }: { label: string; value?: string }) {
    CARDS DE CONTEÚDO (cada um = bloco modular wrap={false})
 ═══════════════════════════════════════════════════════ */
 
+const METRIC_ORDER: (keyof PerformanceMetrics)[] = [
+  "leads", "conversions", "clicks", "impressions", "reach", "views",
+  "cpc", "cpa", "cpm", "ctr", "cpv",
+];
+const METRIC_PDF: Record<keyof PerformanceMetrics, { label: string; suffix?: string; emphasize?: boolean }> = {
+  impressions: { label: "Impressões" },
+  reach:       { label: "Alcance" },
+  clicks:      { label: "Cliques" },
+  ctr:         { label: "CTR", suffix: "%" },
+  cpc:         { label: "CPC", emphasize: true },
+  cpm:         { label: "CPM" },
+  conversions: { label: "Conversões", emphasize: true },
+  leads:       { label: "Leads", emphasize: true },
+  cpa:         { label: "CPA", emphasize: true },
+  views:       { label: "Views" },
+  cpv:         { label: "CPV" },
+};
+
+function MetricsBlockPDF({ metrics, color }: { metrics: PerformanceMetrics; color: string }) {
+  const items = METRIC_ORDER
+    .filter(k => metrics[k] != null && String(metrics[k]).trim() !== "")
+    .map(k => ({ ...METRIC_PDF[k], value: String(metrics[k]) }));
+  if (items.length === 0) return null;
+
+  return (
+    <View style={{
+      marginTop: 9, paddingTop: 8,
+      borderTopWidth: 1, borderTopColor: C.borderMid,
+    }}>
+      <Text style={{
+        fontSize: T.micro, fontFamily: "Helvetica-Bold",
+        color: C.muted, letterSpacing: 0.9, marginBottom: 6,
+      }}>
+        ESTIMATIVAS DE PERFORMANCE
+      </Text>
+      <View style={{
+        flexDirection: "row", flexWrap: "wrap", gap: 4,
+      }}>
+        {items.map((m, i) => (
+          <View key={i} style={{
+            width: `${100 / Math.min(items.length, 4) - 1}%`,
+            backgroundColor: m.emphasize ? color + "0a" : C.bg,
+            borderWidth: 1, borderColor: m.emphasize ? color + "22" : C.border,
+            borderRadius: 6, padding: 6, gap: 2, minHeight: 36,
+          }}>
+            <Text style={{
+              fontSize: 6.5, fontFamily: "Helvetica-Bold",
+              color: m.emphasize ? color : C.muted,
+              letterSpacing: 0.6, textTransform: "uppercase",
+            }}>
+              {m.label}
+            </Text>
+            <Text style={{
+              fontSize: T.h4, fontFamily: "Helvetica-Bold",
+              color: m.emphasize ? color : C.text,
+              letterSpacing: -0.2,
+            }}>
+              {m.value}{m.suffix ?? ""}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /** Card de distribuição de orçamento por plataforma */
 function BudgetCard({ b, maxPct }: { b: CampaignPlan["budgetDistribution"][number]; maxPct: number }) {
   const color = platColor(b.platform);
@@ -284,6 +350,7 @@ function BudgetCard({ b, maxPct }: { b: CampaignPlan["budgetDistribution"][numbe
           {b.allocation}
         </Text>
       ) : null}
+      {b.metrics && <MetricsBlockPDF metrics={b.metrics} color={color} />}
     </View>
   );
 }

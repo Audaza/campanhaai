@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { CampaignPlan } from "@/types/campaign";
+import type { CampaignPlan, PerformanceMetrics } from "@/types/campaign";
 import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, Sparkles } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
@@ -144,6 +144,111 @@ function Chip({ label, color = C.muted, bg = C.borderMid, icon }: {
       {icon}
       {label}
     </span>
+  );
+}
+
+/** Mini ícone SVG inline para a métrica */
+function MetricIcon({ kind, color }: { kind: string; color: string }) {
+  const common = { width: 14, height: 14, viewBox: "0 0 16 16", fill: "none", stroke: color, strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  switch (kind) {
+    case "impressions": return <svg {...common}><circle cx="8" cy="8" r="2.5"/><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/></svg>;
+    case "reach":       return <svg {...common}><circle cx="6" cy="6.5" r="2.5"/><path d="M11 11.5c0-1.93-2-3.5-5-3.5s-5 1.57-5 3.5"/><circle cx="11.5" cy="5" r="1.8"/><path d="M15 10c0-1.5-1.34-2.5-3.5-2.5"/></svg>;
+    case "clicks":      return <svg {...common}><path d="M5 3l8 5-3.5 1L8 13l-3-10z"/></svg>;
+    case "ctr":         return <svg {...common}><path d="M2 14l4-4 3 3 5-6"/><path d="M14 4h-3M14 4v3"/></svg>;
+    case "cpc":         return <svg {...common}><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2 1.5"/></svg>;
+    case "cpm":         return <svg {...common}><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6h12M5 9h6M5 11h4"/></svg>;
+    case "conversions": return <svg {...common}><path d="M3 8l3 3 7-7"/></svg>;
+    case "leads":       return <svg {...common}><path d="M3 8a5 5 0 1110 0v5l-2-1-2 1-2-1-2 1V8z"/></svg>;
+    case "cpa":         return <svg {...common}><circle cx="8" cy="6" r="2.5"/><path d="M3 13c0-2.5 2.24-4.5 5-4.5s5 2 5 4.5"/></svg>;
+    case "views":       return <svg {...common}><polygon points="5,3 13,8 5,13" fill={color} stroke="none"/></svg>;
+    case "cpv":         return <svg {...common}><polygon points="3,4 11,8 3,12" fill={color} stroke="none"/><path d="M14 4v8"/></svg>;
+    default:            return null;
+  }
+}
+
+interface MetricSpec { key: keyof PerformanceMetrics; label: string; icon: string; suffix?: string; emphasize?: boolean; }
+
+const METRIC_LABELS: Record<keyof PerformanceMetrics, MetricSpec> = {
+  impressions: { key: "impressions", label: "Impressões",  icon: "impressions" },
+  reach:       { key: "reach",       label: "Alcance",     icon: "reach" },
+  clicks:      { key: "clicks",      label: "Cliques",     icon: "clicks" },
+  ctr:         { key: "ctr",         label: "CTR",         icon: "ctr",         suffix: "%" },
+  cpc:         { key: "cpc",         label: "CPC",         icon: "cpc",         emphasize: true },
+  cpm:         { key: "cpm",         label: "CPM",         icon: "cpm" },
+  conversions: { key: "conversions", label: "Conversões",  icon: "conversions", emphasize: true },
+  leads:       { key: "leads",       label: "Leads",       icon: "leads",       emphasize: true },
+  cpa:         { key: "cpa",         label: "CPA",         icon: "cpa",         emphasize: true },
+  views:       { key: "views",       label: "Views",       icon: "views" },
+  cpv:         { key: "cpv",         label: "CPV",         icon: "cpv" },
+};
+
+/** Grid de métricas previstas — só mostra os campos preenchidos */
+function MetricsGrid({ metrics, color }: { metrics: PerformanceMetrics; color: string }) {
+  /* Ordem de prioridade: chave → emfase primeiro, depois volume, depois custo */
+  const order: (keyof PerformanceMetrics)[] = [
+    "leads", "conversions", "clicks", "impressions", "reach", "views",
+    "cpc", "cpa", "cpm", "ctr", "cpv",
+  ];
+  const items = order
+    .filter(k => metrics[k] != null && String(metrics[k]).trim() !== "")
+    .map(k => ({ ...METRIC_LABELS[k], value: String(metrics[k]) }));
+
+  if (items.length === 0) return null;
+
+  return (
+    <div style={{
+      marginTop: 14,
+      borderTop: `1px solid ${C.borderMid}`,
+      paddingTop: 12,
+    }}>
+      <p style={{
+        fontSize: 9.5, fontWeight: 800, letterSpacing: "0.11em",
+        textTransform: "uppercase", color: C.muted, margin: "0 0 9px",
+      }}>
+        Estimativas de Performance
+      </p>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${Math.min(items.length, 4)}, minmax(0, 1fr))`,
+        gap: 6,
+      }}>
+        {items.map((m, i) => {
+          const accent = m.emphasize ? color : C.subtext;
+          return (
+            <div
+              key={i}
+              style={{
+                background: m.emphasize ? `${color}08` : C.bg,
+                border: `1px solid ${m.emphasize ? color + "20" : C.border}`,
+                borderRadius: 8,
+                padding: "9px 10px",
+                display: "flex", flexDirection: "column", gap: 4,
+                minWidth: 0,
+              }}
+              title={`${m.label}: ${m.value}${m.suffix ?? ""}`}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 5, color: m.emphasize ? color : C.muted }}>
+                <MetricIcon kind={m.icon} color={m.emphasize ? color : C.muted} />
+                <span style={{
+                  fontSize: 9.5, fontWeight: 700, letterSpacing: "0.06em",
+                  textTransform: "uppercase", color: m.emphasize ? color : C.muted,
+                }}>
+                  {m.label}
+                </span>
+              </div>
+              <p style={{
+                fontSize: 14, fontWeight: 800, color: accent,
+                margin: 0, letterSpacing: "-0.025em", lineHeight: 1.1,
+                fontVariantNumeric: "tabular-nums",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {m.value}{m.suffix ?? ""}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -615,6 +720,7 @@ export default function ResultadoPage() {
                         {b.allocation}
                       </p>
                     )}
+                    {b.metrics && <MetricsGrid metrics={b.metrics} color={c.color} />}
                   </div>
                 );
               })}

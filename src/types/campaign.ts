@@ -128,11 +128,39 @@ export interface TimelinePhase {
   actions:  string[];
 }
 
+/** Estimativas de performance por plataforma (geradas pela IA com base em
+ *  benchmarks de mercado para o objetivo + setor + investimento). */
+export interface PerformanceMetrics {
+  /** Impressões totais estimadas (ex: "180.000") */
+  impressions?: string;
+  /** Alcance único estimado (ex: "120.000") */
+  reach?:       string;
+  /** Cliques totais estimados (ex: "3.500") */
+  clicks?:      string;
+  /** Custo por mil impressões (ex: "R$ 12,80") */
+  cpm?:         string;
+  /** Custo por clique (ex: "R$ 0,85") */
+  cpc?:         string;
+  /** Taxa de cliques % (ex: "2.9") — só o número */
+  ctr?:         string;
+  /** Conversões estimadas (objetivo Conversão/Vendas) */
+  conversions?: string;
+  /** Leads estimados (objetivo Geração de Leads) */
+  leads?:       string;
+  /** Custo por aquisição/lead (ex: "R$ 35,30") */
+  cpa?:         string;
+  /** Visualizações de vídeo (objetivo Engajamento/Reconhecimento com vídeo) */
+  views?:       string;
+  /** Custo por visualização (ex: "R$ 0,02") */
+  cpv?:         string;
+}
+
 export interface BudgetDistribution {
   platform:   Platform;
   amount:     string;
   percentage: number;
   allocation: string;
+  metrics?:   PerformanceMetrics;
 }
 
 export interface CreativeSuggestion {
