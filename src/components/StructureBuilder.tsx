@@ -848,6 +848,7 @@ export default function StructureBuilder({ campaigns, budgetLevel, googleCampaig
               key={campaign.id}
               campaign={campaign}
               budgetLevel={budgetLevel}
+              aiContext={aiContext}
               onChange={(updated) => onChange(campaigns.map((c, i) => i === cIdx ? updated : c))}
             />
           );

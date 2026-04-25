@@ -5,6 +5,9 @@ import type {
   CampaignInput, AdSetInput, AdInput, BudgetLevel, GoogleCampaignType,
 } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
+import KeywordChipInput from "@/components/KeywordChipInput";
+import ResponsiveSearchAdBuilder from "@/components/ResponsiveSearchAdBuilder";
+import type { RSAContext } from "@/lib/openaiClient";
 
 const RED        = "#EA4335";
 const RED_DIM    = "rgba(234,67,53,0.08)";
@@ -136,33 +139,38 @@ function FieldLabel({ icon, children, hint }: { icon?: string; children: React.R
    Conteúdo específico por tipo
 ═══════════════════════════════════════════════════════ */
 
-function SearchGroupFields({ group, onChange }: {
-  group: AdSetInput; onChange: (u: Partial<AdSetInput>) => void;
+function SearchGroupFields({ group, onChange, aiContext }: {
+  group: AdSetInput;
+  onChange: (u: Partial<AdSetInput>) => void;
+  aiContext?: RSAContext;
 }) {
   const ad = group.ads[0];
   const setCopy = (v: string) => onChange({ ads: [{ ...ad, copy: v }] });
+  const rsaContext: RSAContext | undefined = aiContext
+    ? { ...aiContext, keywords: group.audience || aiContext.keywords }
+    : undefined;
   return (
     <>
       <div>
-        <FieldLabel icon="🔑" hint="Termos que devem acionar seus anúncios — um por linha ou separados por vírgula.">
+        <FieldLabel icon="🔑" hint="Cada termo é uma chip. Tecle Enter ou vírgula para adicionar.">
           Palavras-chave
         </FieldLabel>
-        <AutoTextarea
+        <KeywordChipInput
           value={group.audience}
-          placeholder="plano de saúde empresarial&#10;convênio médico PME&#10;cotação plano de saúde"
-          rows={3}
           onChange={v => onChange({ audience: v })}
+          placeholder="plano de saúde empresarial"
+          accent={RED}
+          showCount
         />
       </div>
       <div>
-        <FieldLabel icon="📝" hint="Até 15 títulos (máx 30 caracteres) e 4 descrições (máx 90). Separe por '|' ou quebra de linha.">
+        <FieldLabel icon="📝" hint="Inputs separados para cada título e descrição, com contador de caracteres.">
           Anúncio responsivo (RSA)
         </FieldLabel>
-        <AutoTextarea
+        <ResponsiveSearchAdBuilder
           value={ad?.copy ?? ""}
-          placeholder={"Títulos:\n- Plano de Saúde para Empresa\n- Cotação em 2 minutos\n- Economize até 30%\n\nDescrições:\n- Atendimento em todo Brasil, cobertura nacional.\n- Consulte cotação personalizada para sua equipe."}
-          rows={4}
           onChange={setCopy}
+          context={rsaContext}
         />
       </div>
     </>
@@ -177,14 +185,15 @@ function DisplayGroupFields({ group, onChange }: {
   return (
     <>
       <div>
-        <FieldLabel icon="🎯" hint="Interesses, segmentos no mercado, dados demográficos, públicos similares.">
+        <FieldLabel icon="🎯" hint="Cada segmento vira uma chip. Tecle Enter ou vírgula.">
           Segmentos de público
         </FieldLabel>
-        <AutoTextarea
+        <KeywordChipInput
           value={group.audience}
-          placeholder="Pessoas interessadas em saúde corporativa&#10;Gestores de RH em PMEs&#10;Lookalike de clientes"
-          rows={3}
           onChange={v => onChange({ audience: v })}
+          placeholder="Gestores de RH em PMEs"
+          accent={RED}
+          showCount
         />
       </div>
       <div>
@@ -272,14 +281,15 @@ function PMaxGroupFields({ group, onChange }: {
   return (
     <>
       <div>
-        <FieldLabel icon="📡" hint="Público que o Google usa como ponto de partida pra encontrar conversões similares.">
+        <FieldLabel icon="📡" hint="Cada sinal vira uma chip. Tecle Enter ou vírgula.">
           Sinais de público
         </FieldLabel>
-        <AutoTextarea
+        <KeywordChipInput
           value={group.audience}
-          placeholder="Clientes atuais&#10;Visitantes do site últimos 90 dias&#10;Interessados em benefícios corporativos"
-          rows={3}
           onChange={v => onChange({ audience: v })}
+          placeholder="Clientes atuais"
+          accent={RED}
+          showCount
         />
       </div>
       <div>
@@ -305,14 +315,15 @@ function DemandGenGroupFields({ group, onChange }: {
   return (
     <>
       <div>
-        <FieldLabel icon="🎯" hint="Interesses, lookalikes, remarketing, dados demográficos.">
+        <FieldLabel icon="🎯" hint="Cada segmento vira uma chip. Tecle Enter ou vírgula.">
           Segmentação de público
         </FieldLabel>
-        <AutoTextarea
+        <KeywordChipInput
           value={group.audience}
-          placeholder="Lookalike de clientes existentes&#10;Interessados em saúde corporativa&#10;Visitantes do site"
-          rows={3}
           onChange={v => onChange({ audience: v })}
+          placeholder="Lookalike de clientes existentes"
+          accent={RED}
+          showCount
         />
       </div>
       <div>
@@ -330,11 +341,14 @@ function DemandGenGroupFields({ group, onChange }: {
   );
 }
 
-function GroupFieldsFor({ gType, group, onChange }: {
-  gType: GoogleCampaignType; group: AdSetInput; onChange: (u: Partial<AdSetInput>) => void;
+function GroupFieldsFor({ gType, group, onChange, aiContext }: {
+  gType: GoogleCampaignType;
+  group: AdSetInput;
+  onChange: (u: Partial<AdSetInput>) => void;
+  aiContext?: RSAContext;
 }) {
   switch (gType) {
-    case "Pesquisa":        return <SearchGroupFields     group={group} onChange={onChange} />;
+    case "Pesquisa":        return <SearchGroupFields     group={group} onChange={onChange} aiContext={aiContext} />;
     case "Display":         return <DisplayGroupFields    group={group} onChange={onChange} />;
     case "Vídeo/YouTube":   return <VideoGroupFields      group={group} onChange={onChange} />;
     case "Shopping":        return <ShoppingGroupFields   group={group} onChange={onChange} />;
@@ -351,9 +365,11 @@ interface Props {
   campaign:    CampaignInput;
   budgetLevel: BudgetLevel;
   onChange:    (c: CampaignInput) => void;
+  /** Contexto para "Gerar com IA" no RSA builder */
+  aiContext?:  RSAContext;
 }
 
-export default function GoogleCampaignCard({ campaign, budgetLevel, onChange }: Props) {
+export default function GoogleCampaignCard({ campaign, budgetLevel, onChange, aiContext }: Props) {
   const maybeGType = campaign.googleCampaignType;
   if (!maybeGType) {
     return (
@@ -502,6 +518,7 @@ export default function GoogleCampaignCard({ campaign, budgetLevel, onChange }: 
                 gType={gType}
                 group={group}
                 onChange={u => updateGroup(gIdx, u)}
+                aiContext={aiContext}
               />
             </div>
           </div>
