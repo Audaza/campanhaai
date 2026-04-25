@@ -2,7 +2,7 @@ import {
   Document, Page, Text, View, Image,
   Svg, Defs, LinearGradient, Stop, Rect,
 } from "@react-pdf/renderer";
-import { CampaignPlan, PerformanceMetrics } from "@/types/campaign";
+import { CampaignPlan } from "@/types/campaign";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* ═══════════════════════════════════════════════════════
@@ -242,72 +242,6 @@ function KeyValue({ label, value }: { label: string; value?: string }) {
    CARDS DE CONTEÚDO (cada um = bloco modular wrap={false})
 ═══════════════════════════════════════════════════════ */
 
-const METRIC_ORDER: (keyof PerformanceMetrics)[] = [
-  "leads", "conversions", "clicks", "impressions", "reach", "views",
-  "cpc", "cpa", "cpm", "ctr", "cpv",
-];
-const METRIC_PDF: Record<keyof PerformanceMetrics, { label: string; suffix?: string; emphasize?: boolean }> = {
-  impressions: { label: "Impressões" },
-  reach:       { label: "Alcance" },
-  clicks:      { label: "Cliques" },
-  ctr:         { label: "CTR", suffix: "%" },
-  cpc:         { label: "CPC", emphasize: true },
-  cpm:         { label: "CPM" },
-  conversions: { label: "Conversões", emphasize: true },
-  leads:       { label: "Leads", emphasize: true },
-  cpa:         { label: "CPA", emphasize: true },
-  views:       { label: "Views" },
-  cpv:         { label: "CPV" },
-};
-
-function MetricsBlockPDF({ metrics, color }: { metrics: PerformanceMetrics; color: string }) {
-  const items = METRIC_ORDER
-    .filter(k => metrics[k] != null && String(metrics[k]).trim() !== "")
-    .map(k => ({ ...METRIC_PDF[k], value: String(metrics[k]) }));
-  if (items.length === 0) return null;
-
-  return (
-    <View style={{
-      marginTop: 9, paddingTop: 8,
-      borderTopWidth: 1, borderTopColor: C.borderMid,
-    }}>
-      <Text style={{
-        fontSize: T.micro, fontFamily: "Helvetica-Bold",
-        color: C.muted, letterSpacing: 0.9, marginBottom: 6,
-      }}>
-        ESTIMATIVAS DE PERFORMANCE
-      </Text>
-      <View style={{
-        flexDirection: "row", flexWrap: "wrap", gap: 4,
-      }}>
-        {items.map((m, i) => (
-          <View key={i} style={{
-            width: `${100 / Math.min(items.length, 4) - 1}%`,
-            backgroundColor: m.emphasize ? color + "0a" : C.bg,
-            borderWidth: 1, borderColor: m.emphasize ? color + "22" : C.border,
-            borderRadius: 6, padding: 6, gap: 2, minHeight: 36,
-          }}>
-            <Text style={{
-              fontSize: 6.5, fontFamily: "Helvetica-Bold",
-              color: m.emphasize ? color : C.muted,
-              letterSpacing: 0.6, textTransform: "uppercase",
-            }}>
-              {m.label}
-            </Text>
-            <Text style={{
-              fontSize: T.h4, fontFamily: "Helvetica-Bold",
-              color: m.emphasize ? color : C.text,
-              letterSpacing: -0.2,
-            }}>
-              {m.value}{m.suffix ?? ""}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 /** Card de distribuição de orçamento por plataforma */
 function BudgetCard({ b, maxPct }: { b: CampaignPlan["budgetDistribution"][number]; maxPct: number }) {
   const color = platColor(b.platform);
@@ -350,7 +284,6 @@ function BudgetCard({ b, maxPct }: { b: CampaignPlan["budgetDistribution"][numbe
           {b.allocation}
         </Text>
       ) : null}
-      {b.metrics && <MetricsBlockPDF metrics={b.metrics} color={color} />}
     </View>
   );
 }
@@ -827,19 +760,17 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
           PÁGINA 2 — VISÃO GERAL + ORÇAMENTO
       ═════════════════════════════════════════════ */}
       <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
-        <PageHeader client={plan.overview.clientName} section="Visão Geral" />
 
-        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
+        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 22 }}>
 
-          {/* HERO MINI */}
+          {/* HERO MINI — gradient + cliente + produto */}
           <View wrap={false} style={{
             backgroundColor: C.surface, borderRadius: 12,
             borderWidth: 1, borderColor: C.border, overflow: "hidden",
-            marginBottom: 18,
+            marginBottom: 14,
           }}>
-            {/* Faixa gradiente superior */}
-            <View style={{ height: 92, position: "relative", overflow: "hidden" }}>
-              <Svg width={CONTENT_W} height={92} style={{ position: "absolute", top: 0, left: 0 }}>
+            <View style={{ height: 96, position: "relative", overflow: "hidden" }}>
+              <Svg width={CONTENT_W} height={96} style={{ position: "absolute", top: 0, left: 0 }}>
                 <Defs>
                   <LinearGradient id="heroMini" x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0%" stopColor={C.brandDark} stopOpacity={1} />
@@ -847,7 +778,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                     <Stop offset="100%" stopColor="#34aadc" stopOpacity={1} />
                   </LinearGradient>
                 </Defs>
-                <Rect x={0} y={0} width={CONTENT_W} height={92} fill="url(#heroMini)" />
+                <Rect x={0} y={0} width={CONTENT_W} height={96} fill="url(#heroMini)" />
                 <Rect x={CONTENT_W - 120} y={-50} width={200} height={200} rx={100} fill={C.surface} fillOpacity={0.06} />
               </Svg>
               <View style={{ padding: 16, flex: 1, justifyContent: "center" }}>
@@ -869,45 +800,125 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                 {plan.overview.summary}
               </Text>
             </View>
+          </View>
 
-            {/* Stats strip */}
-            <View style={{ flexDirection: "row", borderTopWidth: 1, borderTopColor: C.border }}>
-              {stats.map((s, i) => (
-                <View key={i} style={{
-                  flex: 1, paddingVertical: 13, alignItems: "center",
-                  borderRightWidth: i < stats.length - 1 ? 1 : 0,
-                  borderRightColor: C.border,
-                }}>
-                  <Text style={{
-                    fontSize: T.d2, fontFamily: "Helvetica-Bold", color: C.text,
-                    letterSpacing: -0.5, marginBottom: 2,
+          {/* CONFIGURAÇÃO DA CAMPANHA — bloco principal de informações */}
+          <View wrap={false} style={{
+            backgroundColor: C.surface, borderRadius: 12,
+            borderWidth: 1, borderColor: C.border, overflow: "hidden",
+            marginBottom: 14,
+          }}>
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 10,
+              backgroundColor: C.brandSoft,
+              borderBottomWidth: 1, borderBottomColor: C.brand + "22",
+              flexDirection: "row", alignItems: "center", gap: 8,
+            }}>
+              <View style={{
+                width: 4, height: 14, backgroundColor: C.brand, borderRadius: 2,
+              }} />
+              <Text style={{
+                fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.brand,
+                letterSpacing: 1.3,
+              }}>
+                CONFIGURAÇÃO DA CAMPANHA
+              </Text>
+            </View>
+
+            {/* Grid 4 colunas: Objetivo · Período · Localização · Investimento */}
+            <View style={{ flexDirection: "row" }}>
+              {(() => {
+                const cells: { eyebrow: string; value: string; icon: string }[] = [
+                  { eyebrow: "OBJETIVO",  value: plan.overview.objective,                                  icon: "◎" },
+                  { eyebrow: "PERÍODO",   value: plan.overview.duration,                                   icon: "▱" },
+                ];
+                if (plan.overview.location) {
+                  cells.push({ eyebrow: "LOCALIZAÇÃO", value: trunc(plan.overview.location, 28), icon: "◉" });
+                }
+                cells.push({
+                  eyebrow: plan.overview.dailyBudget ? "INVEST. DIÁRIO" : "INVESTIMENTO",
+                  value:   plan.overview.dailyBudget || plan.overview.totalBudget,
+                  icon:    "$",
+                });
+                return cells.map((c, i) => (
+                  <View key={i} style={{
+                    flex: 1, paddingVertical: 12, paddingHorizontal: 12,
+                    borderRightWidth: i < cells.length - 1 ? 1 : 0,
+                    borderRightColor: C.border,
                   }}>
-                    {s.value}
-                  </Text>
-                  <Text style={{
-                    fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
-                    letterSpacing: 0.5, textTransform: "uppercase",
-                  }}>
-                    {s.label}
-                  </Text>
-                </View>
-              ))}
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                      <View style={{
+                        width: 14, height: 14, borderRadius: 4,
+                        backgroundColor: C.brandSoft,
+                        alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.brand }}>{c.icon}</Text>
+                      </View>
+                      <Text style={{
+                        fontSize: T.micro, fontFamily: "Helvetica-Bold",
+                        color: C.muted, letterSpacing: 0.9,
+                      }}>
+                        {c.eyebrow}
+                      </Text>
+                    </View>
+                    <Text style={{
+                      fontSize: T.h4, fontFamily: "Helvetica-Bold",
+                      color: C.text, letterSpacing: -0.2, lineHeight: 1.2,
+                    }}>
+                      {c.value}
+                    </Text>
+                  </View>
+                ));
+              })()}
+            </View>
+
+            {/* Plataformas */}
+            <View style={{
+              paddingHorizontal: 16, paddingVertical: 12,
+              borderTopWidth: 1, borderTopColor: C.borderMid,
+              backgroundColor: C.bg,
+            }}>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold",
+                color: C.muted, letterSpacing: 0.9, marginBottom: 6,
+              }}>
+                PLATAFORMAS
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                {plan.overview.platforms.map((p, i) => {
+                  const cc = platColor(p);
+                  return <Chip key={i} label={p} color={cc} bg={platSoft(cc)} />;
+                })}
+              </View>
             </View>
           </View>
 
-          {/* Tags da campanha */}
-          <View wrap={false} style={{ marginBottom: 18 }}>
-            <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.9, marginBottom: 7 }}>
-              CONFIGURAÇÃO DA CAMPANHA
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
-              <Chip label={plan.overview.objective} color={C.brand} bg={C.brandSoft} />
-              <Chip label={plan.overview.duration} />
-              {plan.overview.platforms.map((p, i) => {
-                const cc = platColor(p);
-                return <Chip key={i} label={p} color={cc} bg={platSoft(cc)} />;
-              })}
-            </View>
+          {/* Stats strip — agora um bloco próprio compacto, abaixo da config */}
+          <View wrap={false} style={{
+            backgroundColor: C.surface, borderRadius: 12,
+            borderWidth: 1, borderColor: C.border,
+            marginBottom: 18, flexDirection: "row",
+          }}>
+            {stats.map((s, i) => (
+              <View key={i} style={{
+                flex: 1, paddingVertical: 14, alignItems: "center",
+                borderRightWidth: i < stats.length - 1 ? 1 : 0,
+                borderRightColor: C.border,
+              }}>
+                <Text style={{
+                  fontSize: T.d2, fontFamily: "Helvetica-Bold", color: C.text,
+                  letterSpacing: -0.5, marginBottom: 2,
+                }}>
+                  {s.value}
+                </Text>
+                <Text style={{
+                  fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
+                  letterSpacing: 0.5, textTransform: "uppercase",
+                }}>
+                  {s.label}
+                </Text>
+              </View>
+            ))}
           </View>
 
           {/* SEÇÃO — Distribuição de Orçamento */}

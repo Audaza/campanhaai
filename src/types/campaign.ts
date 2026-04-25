@@ -197,6 +197,8 @@ export interface CampaignPlan {
     objective:   string;
     platforms:   Platform[];
     summary:     string;
+    /** Localização da campanha (cidade/estado) — opcional, vem do form */
+    location?:   string;
   };
   googleAdsConfig?:   GoogleAdsPlanConfig;
   campaigns:          Campaign[];
