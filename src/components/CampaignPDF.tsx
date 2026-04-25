@@ -571,7 +571,7 @@ function AdSetCard({
   const fmts = [...new Set(adSet.ads.map(a => a.format))].join(" · ");
 
   return (
-    <View wrap={false} style={{
+    <View style={{
       backgroundColor: C.bg, borderRadius: 9,
       borderWidth: 1, borderColor: C.borderMid,
       overflow: "hidden", marginBottom: 8,
@@ -641,6 +641,233 @@ function AdSetCard({
         {labels.hasManualAds && adSet.ads.map((ad, k) => (
           <AdCard key={k} ad={ad} color={color} />
         ))}
+      </View>
+    </View>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   PRÉ-VISUALIZAÇÃO — Simulação de como o anúncio aparece
+═══════════════════════════════════════════════════════ */
+
+/** Mockup de resultado patrocinado na Pesquisa do Google */
+function SearchAdPreviewPDF({
+  copy, finalUrl, clientName,
+}: {
+  copy: string; finalUrl?: string; clientName: string;
+}) {
+  const { titles, descriptions } = parseRSA(copy);
+  if (!titles.length && !descriptions.length) return null;
+
+  const top3 = titles.slice(0, 3);
+  const headline = top3.length > 0 ? top3.join(" | ") : clientName;
+  const desc = descriptions.slice(0, 2).join(" ").trim() || "Saiba mais sobre nossos serviços.";
+  const host = finalUrl ? (() => {
+    try {
+      const u = new URL(finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`);
+      return u.hostname.replace(/^www\./, "");
+    } catch { return finalUrl.replace(/^https?:\/\//, "").split("/")[0]; }
+  })() : "seusite.com.br";
+
+  return (
+    <View wrap={false} style={{
+      backgroundColor: C.surface, borderRadius: 10,
+      borderWidth: 1, borderColor: C.border,
+      padding: 16, marginBottom: 10,
+    }}>
+      {/* Mini browser bar */}
+      <View style={{
+        flexDirection: "row", alignItems: "center", gap: 5,
+        paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.borderMid,
+        marginBottom: 12,
+      }}>
+        <Svg width={14} height={14} viewBox="0 0 16 16">
+          <Path d="M14.5 8c0 3.6-2.9 6.5-6.5 6.5S1.5 11.6 1.5 8 4.4 1.5 8 1.5s6.5 2.9 6.5 6.5z" fill="none" stroke={C.muted} strokeWidth={1.2} />
+          <Path d="M8 1.5C5 4 5 12 8 14.5M8 1.5C11 4 11 12 8 14.5M1.5 8h13" fill="none" stroke={C.muted} strokeWidth={1.2} />
+        </Svg>
+        <Text style={{ fontSize: T.tiny, color: C.muted, flex: 1 }}>
+          google.com/search
+        </Text>
+        <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.6 }}>
+          PRÉ-VISUALIZAÇÃO
+        </Text>
+      </View>
+
+      {/* Sponsored badge */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text }}>
+          Patrocinado
+        </Text>
+        <Svg width={4} height={4} viewBox="0 0 4 4"><Circle cx={2} cy={2} r={1.5} fill={C.muted} /></Svg>
+        <View style={{
+          width: 18, height: 18, borderRadius: 9,
+          backgroundColor: C.bg, borderWidth: 1, borderColor: C.border,
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.subtext }}>
+            {(clientName || "S")[0].toUpperCase()}
+          </Text>
+        </View>
+        <View>
+          <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.text }}>
+            {trunc(clientName, 26)}
+          </Text>
+          <Text style={{ fontSize: 8, color: C.subtext }}>
+            {host}
+          </Text>
+        </View>
+      </View>
+
+      {/* Headline (azul, grande, como link Google) */}
+      <Text style={{
+        fontSize: 16, color: "#1a0dab", letterSpacing: -0.2,
+        marginBottom: 4, lineHeight: 1.25,
+      }}>
+        {trunc(headline, 110)}
+      </Text>
+
+      {/* Descrição */}
+      <Text style={{
+        fontSize: T.small, color: "#4d5156",
+        lineHeight: 1.5,
+      }}>
+        {trunc(desc, 200)}
+      </Text>
+    </View>
+  );
+}
+
+/** Mockup de cartão patrocinado no Google Maps / Google Meu Negócio */
+function LocalAdPreviewPDF({
+  clientName, product, finalUrl, location,
+}: {
+  clientName: string; product: string; finalUrl?: string; location?: string;
+}) {
+  const host = finalUrl ? (() => {
+    try {
+      const u = new URL(finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`);
+      return u.hostname.replace(/^www\./, "");
+    } catch { return finalUrl.replace(/^https?:\/\//, "").split("/")[0]; }
+  })() : "";
+
+  return (
+    <View wrap={false} style={{
+      backgroundColor: C.surface, borderRadius: 10,
+      borderWidth: 1, borderColor: C.border,
+      padding: 16, marginBottom: 10,
+    }}>
+      {/* Bar */}
+      <View style={{
+        flexDirection: "row", alignItems: "center", gap: 5,
+        paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: C.borderMid,
+        marginBottom: 12,
+      }}>
+        <Svg width={14} height={14} viewBox="0 0 16 16">
+          <Path d="M8 1.5C5 1.5 3 3.5 3 6.5C3 10 8 14.5 8 14.5C8 14.5 13 10 13 6.5C13 3.5 11 1.5 8 1.5Z" fill="none" stroke={C.muted} strokeWidth={1.2} />
+          <Circle cx={8} cy={6.3} r={1.7} fill="none" stroke={C.muted} strokeWidth={1.2} />
+        </Svg>
+        <Text style={{ fontSize: T.tiny, color: C.muted, flex: 1 }}>
+          google.com/maps
+        </Text>
+        <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.6 }}>
+          PRÉ-VISUALIZAÇÃO LOCAL
+        </Text>
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {/* Thumb de imagem */}
+        <View style={{
+          width: 78, height: 78, borderRadius: 8,
+          backgroundColor: C.bg,
+          borderWidth: 1, borderColor: C.border,
+          alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <Text style={{ fontSize: 30, fontFamily: "Helvetica-Bold", color: C.soft }}>
+            {(clientName || "?")[0].toUpperCase()}
+          </Text>
+        </View>
+
+        {/* Info */}
+        <View style={{ flex: 1, gap: 4 }}>
+          <Text style={{
+            fontSize: 11, color: C.text, fontFamily: "Helvetica-Bold",
+            letterSpacing: -0.2,
+          }}>
+            {trunc(clientName, 36)}
+          </Text>
+
+          {/* Estrelas + categoria */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Text style={{ fontSize: 10, color: "#f59e0b", fontFamily: "Helvetica-Bold" }}>
+              4,8
+            </Text>
+            {/* 5 estrelas */}
+            {[0,1,2,3,4].map(i => (
+              <Svg key={i} width={10} height={10} viewBox="0 0 10 10">
+                <Path
+                  d="M5 0.5L6.4 3.3L9.5 3.7L7.2 5.9L7.7 9L5 7.5L2.3 9L2.8 5.9L0.5 3.7L3.6 3.3z"
+                  fill="#f59e0b"
+                />
+              </Svg>
+            ))}
+            <Text style={{ fontSize: T.micro, color: C.muted }}>
+              (142)
+            </Text>
+          </View>
+
+          <Text style={{ fontSize: T.tiny, color: C.subtext }}>
+            {trunc(product, 60)}
+          </Text>
+
+          {location && (
+            <Text style={{ fontSize: T.tiny, color: C.muted }}>
+              📍 {trunc(location, 50)}
+            </Text>
+          )}
+
+          {/* Botões mock */}
+          <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+            {host && (
+              <View style={{
+                paddingVertical: 3, paddingHorizontal: 8, borderRadius: 4,
+                backgroundColor: C.brand,
+              }}>
+                <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.surface }}>
+                  Site
+                </Text>
+              </View>
+            )}
+            <View style={{
+              paddingVertical: 3, paddingHorizontal: 8, borderRadius: 4,
+              backgroundColor: C.bg, borderWidth: 1, borderColor: C.border,
+            }}>
+              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.subtext }}>
+                Como chegar
+              </Text>
+            </View>
+            <View style={{
+              paddingVertical: 3, paddingHorizontal: 8, borderRadius: 4,
+              backgroundColor: C.bg, borderWidth: 1, borderColor: C.border,
+            }}>
+              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: C.subtext }}>
+                Ligar
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Selo Patrocinado */}
+        <View style={{ alignItems: "flex-end", flexShrink: 0 }}>
+          <View style={{
+            paddingVertical: 2, paddingHorizontal: 6, borderRadius: 3,
+            backgroundColor: "#fef3c7",
+            borderWidth: 1, borderColor: "#fbbf24",
+          }}>
+            <Text style={{ fontSize: 7.5, fontFamily: "Helvetica-Bold", color: "#92400e" }}>
+              PATROCINADO
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -1091,75 +1318,148 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
       </Page>
 
       {/* ═════════════════════════════════════════════
-          PÁGINA 3 — ESTRUTURA DE CAMPANHAS
+          PÁGINAS DE ESTRUTURA — uma por campanha
       ═════════════════════════════════════════════ */}
-      <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
-        <PageHeader client={plan.overview.clientName} section="Estrutura de Campanhas" />
+      {plan.campaigns.map((campaign, ci) => {
+        const color = platColor(campaign.platform);
+        const labels = getHierarchyLabels(campaign.platform, campaign.googleCampaignType);
+        const isGoogleFeedLike = !labels.hasManualAds && campaign.platform === "Google Ads";
+        const sectionLabel = plan.campaigns.length > 1
+          ? `Estrutura · Campanha ${ci + 1}/${plan.campaigns.length}`
+          : "Estrutura de Campanhas";
 
-        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
-          <SectionTitle eyebrow="Organização" title="Estrutura de Campanhas" />
+        return (
+          <Page key={ci} size="A4" style={{
+            fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38,
+          }}>
+            <PageHeader client={plan.overview.clientName} section={sectionLabel} />
 
-          {plan.googleAdsConfig && <GoogleConfigCard config={plan.googleAdsConfig} />}
+            <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
+              <SectionTitle
+                eyebrow={`Campanha ${ci + 1}`}
+                title={trunc(campaign.name, 58)}
+              />
 
-          {plan.campaigns.map((campaign, ci) => {
-            const color = platColor(campaign.platform);
-            const labels = getHierarchyLabels(campaign.platform, campaign.googleCampaignType);
-            const isGoogleFeedLike = !labels.hasManualAds && campaign.platform === "Google Ads";
-
-            return (
-              <View key={ci} style={{ marginBottom: 12 }}>
-                {/* Header da campanha (wrap={false} garante que não corte) */}
-                <View wrap={false} style={{
-                  backgroundColor: C.surface, borderRadius: 10,
-                  borderWidth: 1, borderColor: C.border,
-                  borderLeftWidth: 3, borderLeftColor: color,
-                  paddingHorizontal: 16, paddingVertical: 13,
-                  marginBottom: 8,
-                  flexDirection: "row", alignItems: "center", gap: 12,
-                }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
-                      <PlatBadge platform={campaign.platform} />
-                      {campaign.googleCampaignType && (
-                        <Chip label={campaign.googleCampaignType} color={color} bg={platSoft(color)} />
-                      )}
-                      {campaign.objective && (
-                        <Text style={{ fontSize: T.micro, color: C.muted }}>· {campaign.objective}</Text>
-                      )}
-                    </View>
-                    <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.text, letterSpacing: -0.2 }}>
-                      {trunc(campaign.name, 58)}
+              {/* Header de identificação rápida */}
+              <View wrap={false} style={{
+                backgroundColor: C.surface, borderRadius: 10,
+                borderWidth: 1, borderColor: C.border,
+                borderLeftWidth: 3, borderLeftColor: color,
+                paddingHorizontal: 16, paddingVertical: 13,
+                marginBottom: 12,
+                flexDirection: "row", alignItems: "center", gap: 12,
+              }}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <PlatBadge platform={campaign.platform} />
+                    {campaign.googleCampaignType && (
+                      <Chip label={campaign.googleCampaignType} color={color} bg={platSoft(color)} />
+                    )}
+                    {campaign.objective && (
+                      <Text style={{ fontSize: T.micro, color: C.muted }}>· {campaign.objective}</Text>
+                    )}
+                  </View>
+                </View>
+                {campaign.totalBudget && campaign.totalBudget !== "A definir" && (
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={{ fontSize: T.micro, color: C.muted, letterSpacing: 0.4 }}>ORÇAMENTO</Text>
+                    <Text style={{ fontSize: T.h2, fontFamily: "Helvetica-Bold", color, letterSpacing: -0.4, marginTop: 1 }}>
+                      {campaign.totalBudget}
                     </Text>
                   </View>
-                  {campaign.totalBudget && campaign.totalBudget !== "A definir" && (
-                    <View style={{ alignItems: "flex-end" }}>
-                      <Text style={{ fontSize: T.micro, color: C.muted, letterSpacing: 0.4 }}>ORÇAMENTO</Text>
-                      <Text style={{ fontSize: T.h2, fontFamily: "Helvetica-Bold", color, letterSpacing: -0.4, marginTop: 1 }}>
-                        {campaign.totalBudget}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* AdSets: cada um é um bloco modular wrap={false} */}
-                {campaign.adSets.map((adSet, j) => (
-                  <AdSetCard
-                    key={j}
-                    adSet={adSet}
-                    color={color}
-                    index={j}
-                    labels={labels}
-                    isGoogleFeedLike={isGoogleFeedLike}
-                    googleType={campaign.googleCampaignType}
-                  />
-                ))}
+                )}
               </View>
-            );
-          })}
-        </View>
 
-        <PageFooter date={today} />
-      </Page>
+              {/* Configuração Google Ads — só na primeira campanha Google */}
+              {ci === 0 && plan.googleAdsConfig && (
+                <GoogleConfigCard config={plan.googleAdsConfig} />
+              )}
+
+              {/* AdSets */}
+              {campaign.adSets.map((adSet, j) => (
+                <AdSetCard
+                  key={j}
+                  adSet={adSet}
+                  color={color}
+                  index={j}
+                  labels={labels}
+                  isGoogleFeedLike={isGoogleFeedLike}
+                  googleType={campaign.googleCampaignType}
+                />
+              ))}
+            </View>
+
+            <PageFooter date={today} />
+          </Page>
+        );
+      })}
+
+      {/* ═════════════════════════════════════════════
+          PÁGINA — PRÉ-VISUALIZAÇÕES (só se houver campanha de Pesquisa)
+      ═════════════════════════════════════════════ */}
+      {plan.campaigns.some(c => c.platform === "Google Ads" && c.googleCampaignType === "Pesquisa") && (
+        <Page size="A4" style={{
+          fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38,
+        }}>
+          <PageHeader client={plan.overview.clientName} section="Pré-visualização" />
+
+          <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 20 }}>
+            <SectionTitle
+              eyebrow="Como vai aparecer"
+              title="Pré-visualização do Anúncio"
+            />
+
+            <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.6, marginBottom: 14 }}>
+              Simulação de como o anúncio aparecerá no Google. As combinações
+              exatas de títulos e descrições são montadas dinamicamente pelo
+              algoritmo do Google de acordo com a busca do usuário.
+            </Text>
+
+            {/* Simulação Search Ad */}
+            <View style={{ marginBottom: 6 }}>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold",
+                color: C.muted, letterSpacing: 0.9, marginBottom: 6,
+              }}>
+                MECANISMO DE PESQUISA · GOOGLE.COM
+              </Text>
+              {plan.campaigns
+                .filter(c => c.platform === "Google Ads" && c.googleCampaignType === "Pesquisa")
+                .slice(0, 1)
+                .map((c, i) => {
+                  const firstCopy = c.adSets[0]?.ads[0]?.copy;
+                  if (!firstCopy) return null;
+                  return (
+                    <SearchAdPreviewPDF
+                      key={i}
+                      copy={firstCopy}
+                      finalUrl={plan.googleAdsConfig?.finalUrl}
+                      clientName={plan.overview.clientName}
+                    />
+                  );
+                })}
+            </View>
+
+            {/* Simulação Local / Google Meu Negócio */}
+            <View>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold",
+                color: C.muted, letterSpacing: 0.9, marginBottom: 6,
+              }}>
+                GOOGLE MEU NEGÓCIO · ANÚNCIO LOCAL
+              </Text>
+              <LocalAdPreviewPDF
+                clientName={plan.overview.clientName}
+                product={plan.overview.product}
+                finalUrl={plan.googleAdsConfig?.finalUrl}
+                location={plan.overview.location}
+              />
+            </View>
+          </View>
+
+          <PageFooter date={today} />
+        </Page>
+      )}
 
       {/* ═════════════════════════════════════════════
           PÁGINA 4 — CRONOGRAMA (só se houver fases)
