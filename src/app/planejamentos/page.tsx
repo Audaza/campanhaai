@@ -113,7 +113,10 @@ export default function Planejamentos() {
               padding:"48px 24px", textAlign:"center" as const,
             }}>
               <div style={{ fontSize:42, marginBottom:12 }}>📁</div>
-              <h2 style={{ fontSize:18, fontWeight:700, color:"var(--text)", margin:"0 0 8px" }}>
+              <h2 className="font-display" style={{
+                fontSize: 20, fontWeight: 500, color: "var(--text)",
+                margin: "0 0 8px", letterSpacing: "-0.025em",
+              }}>
                 Nenhum planejamento ainda
               </h2>
               <p style={{ fontSize:14, color:"var(--muted)", margin:"0 0 20px", lineHeight:1.55 }}>
@@ -146,10 +149,10 @@ export default function Planejamentos() {
                       display:"flex", alignItems:"flex-start", gap:16,
                     }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{
-                          fontSize:16, fontWeight:700, color:"var(--text)",
-                          letterSpacing:"-0.018em", marginBottom:6,
-                          overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" as const,
+                        <div className="font-display" style={{
+                          fontSize: 16, fontWeight: 500, color: "var(--text)",
+                          letterSpacing: "-0.022em", marginBottom: 6,
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
                         }}>
                           {p.name}
                         </div>

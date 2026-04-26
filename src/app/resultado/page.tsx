@@ -596,8 +596,8 @@ export default function ResultadoPage() {
                           {b.percentage}% do orçamento total
                         </p>
                       </div>
-                      <p style={{
-                        fontSize: 20, fontWeight: 800, color: c.color,
+                      <p className="font-display" style={{
+                        fontSize: 22, fontWeight: 500, color: c.color,
                         margin: 0, flexShrink: 0, letterSpacing: "-0.04em",
                         fontVariantNumeric: "tabular-nums",
                       }}>
@@ -737,21 +737,21 @@ export default function ResultadoPage() {
                             <span style={{ fontSize: 12, color: C.muted }}>· {campaign.objective}</span>
                           )}
                         </div>
-                        <h3 style={{
-                          fontSize: 16, fontWeight: 700, color: C.text,
-                          margin: 0, letterSpacing: "-0.02em", lineHeight: 1.3,
+                        <h3 className="font-display" style={{
+                          fontSize: 17, fontWeight: 500, color: C.text,
+                          margin: 0, letterSpacing: "-0.025em", lineHeight: 1.25,
                         }}>
                           {campaign.name}
                         </h3>
                       </div>
                       {campaign.totalBudget && campaign.totalBudget !== "A definir" && (
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <p style={{ fontSize: 10, fontWeight: 700, color: C.muted, margin: "0 0 2px", letterSpacing: "0.09em", textTransform: "uppercase" }}>
+                          <p style={{ fontSize: 10, fontWeight: 600, color: C.muted, margin: "0 0 2px", letterSpacing: "0.16em", textTransform: "uppercase" }}>
                             Orçamento
                           </p>
-                          <p style={{
-                            fontSize: 19, fontWeight: 800, color: c.color,
-                            margin: 0, letterSpacing: "-0.035em", lineHeight: 1,
+                          <p className="font-display" style={{
+                            fontSize: 20, fontWeight: 500, color: c.color,
+                            margin: 0, letterSpacing: "-0.04em", lineHeight: 1,
                             fontVariantNumeric: "tabular-nums",
                           }}>
                             {campaign.totalBudget}
@@ -782,9 +782,9 @@ export default function ResultadoPage() {
                                 {j + 1}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{
-                                  fontSize: 13.5, fontWeight: 700, color: C.text,
-                                  margin: 0, letterSpacing: "-0.015em",
+                                <p className="font-display" style={{
+                                  fontSize: 14, fontWeight: 500, color: C.text,
+                                  margin: 0, letterSpacing: "-0.02em",
                                   overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                                 }}>
                                   {adSet.name || `${campaignLabels.adSet} ${j + 1}`}
@@ -953,7 +953,10 @@ export default function ResultadoPage() {
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
-                        <h3 style={{ fontSize: 15, fontWeight: 700, color: C.text, margin: 0, letterSpacing: "-0.022em" }}>
+                        <h3 className="font-display" style={{
+                          fontSize: 16, fontWeight: 500, color: C.text,
+                          margin: 0, letterSpacing: "-0.025em",
+                        }}>
                           {phase.phase}
                         </h3>
                         <span style={{

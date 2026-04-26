@@ -114,7 +114,7 @@ const INITIAL: CampaignFormData = {
   budgetType:"total", budgetLevel:"adset", budget:"",
   duration:"30 dias",
   startDate:"", endDate:"",
-  createTimeline: true,
+  createTimeline: false,
   ageMin:"18", ageMax:"45",
   gender:"Todos", location:"",
   audienceType:"personalizado", interests:"", remarketingSource:"",
@@ -1134,19 +1134,6 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                     )}
                   </Field>
 
-                  {!form.createTimeline && (
-                    <div style={{
-                      background:"rgba(139,92,246,0.06)", borderRadius:10, padding:"12px 14px",
-                      border:"1px solid rgba(139,92,246,0.2)",
-                      display:"flex", gap:10, alignItems:"flex-start",
-                    }}>
-                      <span style={{ fontSize:15 }}>💡</span>
-                      <p style={{ fontSize:13, color:"#6D28D9", margin:0, lineHeight:1.55 }}>
-                        O cronograma não será incluído no planejamento — nem na página de resultado, nem no PDF.
-                        O período continua sendo usado para o orçamento e a estratégia.
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
 
