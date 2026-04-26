@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { listSavedPlans } from "@/lib/savedPlans";
+import BrandHeader from "@/components/BrandHeader";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Home() {
   const router = useRouter();
@@ -44,25 +46,17 @@ export default function Home() {
 
       {/* Top bar */}
       <header style={{
-        background:"rgba(255,255,255,0.82)",
-        backdropFilter:"saturate(200%) blur(24px)",
-        WebkitBackdropFilter:"saturate(200%) blur(24px)",
-        borderBottom:"1px solid var(--border)",
-        display:"flex", alignItems:"center", justifyContent:"center",
-        height:52, position:"sticky", top:0, zIndex:10,
+        background:"rgba(6,7,11,0.72)",
+        backdropFilter:"blur(16px) saturate(140%)",
+        WebkitBackdropFilter:"blur(16px) saturate(140%)",
+        borderBottom:"1px solid var(--rule)",
+        display:"flex", alignItems:"center", justifyContent:"space-between",
+        height:54, position:"sticky", top:0, zIndex:10,
+        padding:"0 18px",
       }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{
-            width:22, height:22, borderRadius:6,
-            background:"linear-gradient(135deg,#0071E3,#34aadc)",
-            display:"flex", alignItems:"center", justifyContent:"center",
-          }}>
-            <span style={{ fontSize:11, color:"white", fontWeight:800 }}>C</span>
-          </div>
-          <span style={{ fontSize:15, fontWeight:700, color:"var(--text)", letterSpacing:"-0.02em" }}>
-            Campanha Tráfego | Audaza
-          </span>
-        </div>
+        <span style={{ width:34 }}/>
+        <BrandHeader />
+        <ThemeToggle />
       </header>
 
       <main style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"72px 20px 80px" }}>

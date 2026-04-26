@@ -12,6 +12,8 @@ import type { StructurePrefill } from "@/components/StructureBuilder";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 import KeywordChipInput from "@/components/KeywordChipInput";
+import BrandHeader from "@/components/BrandHeader";
+import ThemeToggle from "@/components/ThemeToggle";
 
 /* ── Constants ── */
 
@@ -550,28 +552,8 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
         >
           <span style={{ fontSize:14 }}>←</span> Menu
         </button>
-        <div className="font-display" style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{
-            width:24, height:24, borderRadius:7,
-            background:"linear-gradient(135deg,var(--primary),var(--primary-dark))",
-            display:"flex", alignItems:"center", justifyContent:"center",
-            boxShadow:"0 4px 14px rgba(91,158,255,0.35)",
-          }}>
-            <span style={{ fontSize:11, color:"white", fontWeight:700 }}>C</span>
-          </div>
-          <span style={{ fontSize:15, fontWeight:600, color:"var(--text)" }}>
-            Campanha Tráfego · Audaza
-          </span>
-        </div>
-        <span style={{
-          fontSize: 10, fontWeight: 600, color: "var(--success)",
-          background: "var(--success-dim)", border: "1px solid rgba(91,227,138,0.3)",
-          padding: "3px 8px", borderRadius: 999,
-          letterSpacing: "0.04em",
-          fontVariantNumeric: "tabular-nums",
-        }}>
-          v3.0 · DARK
-        </span>
+        <BrandHeader />
+        <ThemeToggle />
       </header>
 
       <main style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", padding:"44px 20px 72px" }}>

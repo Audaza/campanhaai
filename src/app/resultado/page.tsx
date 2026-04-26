@@ -9,6 +9,8 @@ import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { savePlan } from "@/lib/savedPlans";
 import { getHierarchyLabels } from "@/lib/hierarchy";
+import BrandHeader from "@/components/BrandHeader";
+import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS — paleta dark linkbio (audaza.com/apps)
@@ -399,50 +401,41 @@ export default function ResultadoPage() {
             Menu
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: 7,
-              background: `linear-gradient(135deg, ${C.brand}, ${C.brandDark})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 4px 14px rgba(91,158,255,0.35)",
-            }}>
-              <span style={{ fontSize: 11, color: "white", fontWeight: 700 }}>C</span>
-            </div>
-            <span className="display" style={{ fontSize: 15, fontWeight: 600, color: C.text }}>
-              Campanha Tráfego · Audaza
-            </span>
+          <BrandHeader />
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {isClient && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saveState === "saving"}
+                  className="topbar-btn"
+                  style={{
+                    background: saveBtnConfig.bg,
+                    color: saveBtnConfig.color,
+                    border: saveState === "saved" ? `1px solid ${C.accent}35` : `1px solid ${C.border}`,
+                  }}
+                >
+                  {saveBtnConfig.icon}
+                  {saveBtnConfig.label}
+                </button>
+
+                <PDFDownloadLink
+                  document={<CampaignPDF plan={plan} />}
+                  fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
+                >
+                  {({ loading: l }) => (
+                    <button disabled={l} className="export-btn">
+                      <Download size={13} />
+                      {l ? "Gerando…" : "Exportar PDF"}
+                    </button>
+                  )}
+                </PDFDownloadLink>
+              </>
+            )}
+            <ThemeToggle />
           </div>
-
-          {isClient && (
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saveState === "saving"}
-                className="topbar-btn"
-                style={{
-                  background: saveBtnConfig.bg,
-                  color: saveBtnConfig.color,
-                  border: saveState === "saved" ? `1px solid ${C.accent}35` : `1px solid ${C.border}`,
-                }}
-              >
-                {saveBtnConfig.icon}
-                {saveBtnConfig.label}
-              </button>
-
-              <PDFDownloadLink
-                document={<CampaignPDF plan={plan} />}
-                fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
-              >
-                {({ loading: l }) => (
-                  <button disabled={l} className="export-btn">
-                    <Download size={13} />
-                    {l ? "Gerando…" : "Exportar PDF"}
-                  </button>
-                )}
-              </PDFDownloadLink>
-            </div>
-          )}
         </header>
 
         <main style={{ maxWidth: 960, margin: "0 auto", padding: "36px 20px 120px" }}>

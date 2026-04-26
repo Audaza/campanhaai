@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Campanha Tráfego | Audaza",
+  title: "Audaza Campanha",
   description: "Gerador de planejamento de campanhas de tráfego pago com IA",
 };
 
