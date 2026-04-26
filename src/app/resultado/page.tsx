@@ -105,29 +105,29 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-/** Título de seção: eyebrow + h2 + barra */
+/** Título de seção: eyebrow + h2 + barra (estilo /apps) */
 function SectionTitle({
   eyebrow, title, subtitle, style,
 }: { eyebrow: string; title: string; subtitle?: string; style?: CSSProperties }) {
   return (
     <div style={{ marginBottom: 18, ...style }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <div style={{ width: 4, height: 16, background: C.brand, borderRadius: 2 }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div style={{ width: 4, height: 14, background: C.brand, borderRadius: 2 }} />
         <p style={{
-          fontSize: 10.5, fontWeight: 800, letterSpacing: "0.14em",
+          fontSize: 10, fontWeight: 600, letterSpacing: "0.16em",
           textTransform: "uppercase", color: C.brand, margin: 0,
         }}>
           {eyebrow}
         </p>
       </div>
-      <h2 style={{
-        fontSize: 22, fontWeight: 800, color: C.text,
-        margin: 0, letterSpacing: "-0.035em", lineHeight: 1.15,
+      <h2 className="font-display" style={{
+        fontSize: 26, fontWeight: 500, color: C.text,
+        margin: 0, letterSpacing: "-0.035em", lineHeight: 1.1,
       }}>
         {title}
       </h2>
       {subtitle && (
-        <p style={{ fontSize: 13, color: C.muted, margin: "4px 0 0", lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: C.muted, margin: "6px 0 0", lineHeight: 1.55, fontWeight: 300 }}>
           {subtitle}
         </p>
       )}

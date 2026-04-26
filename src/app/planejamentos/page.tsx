@@ -78,13 +78,26 @@ export default function Planejamentos() {
       <main style={{ flex:1, padding:"36px 20px 72px", display:"flex", justifyContent:"center" }}>
         <div style={{ width:"100%", maxWidth:720 }}>
 
-          {/* Heading */}
-          <div style={{ marginBottom:24 }}>
-            <div style={{ fontSize:11, fontWeight:700, color:"var(--muted)", letterSpacing:"0.1em", textTransform:"uppercase" as const }}>
-              Biblioteca
+          {/* Heading estilo /apps */}
+          <div style={{ marginBottom: 28 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+            }}>
+              <div style={{ width: 4, height: 14, background: "var(--primary)", borderRadius: 2 }} />
+              <span style={{
+                fontSize: 10, fontWeight: 600, letterSpacing: "0.16em",
+                textTransform: "uppercase" as const, color: "var(--primary)",
+              }}>
+                Biblioteca
+              </span>
             </div>
-            <h1 style={{ fontSize:28, fontWeight:800, color:"var(--text)", margin:"4px 0 0", letterSpacing:"-0.025em" }}>
-              Planejamentos salvos
+            <h1 className="font-display" style={{
+              fontSize: "clamp(30px, 4vw, 42px)",
+              fontWeight: 500,
+              color: "var(--text)", margin: 0,
+              letterSpacing: "-0.04em", lineHeight: 1.05,
+            }}>
+              Planejamentos <em style={{ fontStyle: "normal", color: "var(--primary-cool)" }}>salvos</em>
             </h1>
           </div>
 
