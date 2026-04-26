@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Fonts (mesmas do linkbio) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 :root {
   /* ── PALETA DARK (igual /apps audaza.com) ── */
   --bg:           #06070b;
@@ -10,6 +7,8 @@
   --surface-2:    rgba(255,255,255,0.06);
   --surface-3:    rgba(255,255,255,0.10);
   --surface-solid:#0e1016;       /* fundo opaco para inputs / popovers */
+  --topbar-bg:    rgba(6,7,11,0.72);
+  --topbar-border:rgba(245,245,247,0.08);
 
   /* Borders sutis */
   --border:       rgba(245,245,247,0.08);
@@ -62,21 +61,23 @@
 /* ── PALETA LIGHT (alternativa via [data-theme="light"] no <html>) ── */
 :root[data-theme="light"] {
   --bg:           #f7f8fa;
-  --surface:      rgba(0,0,0,0.025);
-  --surface-2:    rgba(0,0,0,0.05);
-  --surface-3:    rgba(0,0,0,0.08);
+  --surface:      rgba(10,12,18,0.025);
+  --surface-2:    rgba(10,12,18,0.05);
+  --surface-3:    rgba(10,12,18,0.08);
   --surface-solid:#ffffff;
+  --topbar-bg:    rgba(255,255,255,0.82);
+  --topbar-border:rgba(10,12,18,0.08);
 
   --border:       rgba(10,12,18,0.08);
   --border-mid:   rgba(10,12,18,0.14);
-  --border-input: rgba(10,12,18,0.14);
+  --border-input: rgba(10,12,18,0.18);
   --rule:         rgba(10,12,18,0.08);
 
   --text:         #0a0c12;
   --text-dim:     rgba(10,12,18,0.85);
   --text-sub:     rgba(10,12,18,0.65);
   --muted:        rgba(10,12,18,0.45);
-  --muted-2:      rgba(10,12,18,0.20);
+  --muted-2:      rgba(10,12,18,0.22);
 
   --shadow-xs:    0 1px 2px rgba(10,12,18,0.05);
   --shadow-sm:    0 2px 6px rgba(10,12,18,0.06);
@@ -109,16 +110,17 @@ html { scroll-behavior: smooth; min-height: 100%; background: var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   line-height: 1.5;
   overscroll-behavior-y: none;
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* Display font helper */
-.font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.02em; }
+/* Display font helper (Space Grotesk) */
+.font-display { font-family: var(--font-display), var(--font-inter), sans-serif; letter-spacing: -0.02em; }
 
 /* ── Ambient background (radial sutil + grain) ── */
 .app-bg {

@@ -52,10 +52,10 @@ export default function Planejamentos() {
 
       {/* Top bar */}
       <header style={{
-        background:"rgba(6,7,11,0.72)",
+        background:"var(--topbar-bg)",
         backdropFilter:"blur(16px) saturate(140%)",
         WebkitBackdropFilter:"blur(16px) saturate(140%)",
-        borderBottom:"1px solid var(--rule)",
+        borderBottom:"1px solid var(--topbar-border)",
         display:"flex", alignItems:"center", justifyContent:"space-between",
         height:54, position:"sticky", top:0, zIndex:10,
         padding:"0 18px",

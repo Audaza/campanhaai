@@ -13,24 +13,25 @@ import BrandHeader from "@/components/BrandHeader";
 import ThemeToggle from "@/components/ThemeToggle";
 
 /* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS — paleta dark linkbio (audaza.com/apps)
+   DESIGN TOKENS — referenciam variáveis CSS para adaptar
+   automaticamente entre tema dark/light.
 ═══════════════════════════════════════════════════════ */
 const C = {
-  bg:        "#06070b",
-  surface:   "rgba(255,255,255,0.03)",
-  surface2:  "rgba(255,255,255,0.06)",
-  border:    "rgba(245,245,247,0.08)",
-  borderMid: "rgba(245,245,247,0.14)",
-  text:      "#f5f5f7",
-  subtext:   "rgba(245,245,247,0.85)",
-  muted:     "rgba(245,245,247,0.42)",
-  soft:      "rgba(245,245,247,0.20)",
-  brand:     "#5b9eff",
-  brandDark: "#3a72d8",
-  brandCool: "#7ec8ff",
-  brandSoft: "rgba(91,158,255,0.12)",
-  accent:    "#5be38a",
-  accentBg:  "rgba(91,227,138,0.12)",
+  bg:        "var(--bg)",
+  surface:   "var(--surface)",
+  surface2:  "var(--surface-2)",
+  border:    "var(--border)",
+  borderMid: "var(--border-mid)",
+  text:      "var(--text)",
+  subtext:   "var(--text-dim)",
+  muted:     "var(--muted)",
+  soft:      "var(--muted-2)",
+  brand:     "var(--primary)",
+  brandDark: "var(--primary-dark)",
+  brandCool: "var(--primary-cool)",
+  brandSoft: "var(--primary-dim)",
+  accent:    "var(--success)",
+  accentBg:  "var(--success-dim)",
 } as const;
 
 /* ═══════════════════════════════════════════════════════
@@ -92,7 +93,7 @@ function CopyBtn({ text }: { text: string }) {
       style={{
         display: "inline-flex", alignItems: "center", gap: 4,
         fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6,
-        border: ok ? `1px solid ${C.accent}40` : `1px solid ${C.border}`,
+        border: ok ? "1px solid rgba(91,227,138,0.35)" : `1px solid ${C.border}`,
         background: ok ? C.accentBg : C.bg,
         color: ok ? C.accent : C.muted,
         cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit",
@@ -371,7 +372,7 @@ export default function ResultadoPage() {
           transition: all 0.2s;
         }
         .rec-card:hover {
-          border-color: ${C.brand}40;
+          border-color: rgba(91,158,255,0.35);
           box-shadow: 0 4px 16px rgba(0,113,227,0.08);
           transform: translateY(-1px);
         }
@@ -389,10 +390,10 @@ export default function ResultadoPage() {
         {/* ═════ TOPBAR ═════ */}
         <header style={{
           position: "sticky", top: 0, zIndex: 50,
-          background: "rgba(6,7,11,0.72)",
+          background: "var(--topbar-bg)",
           backdropFilter: "blur(16px) saturate(140%)",
           WebkitBackdropFilter: "blur(16px) saturate(140%)",
-          borderBottom: `1px solid ${C.border}`,
+          borderBottom: "1px solid var(--topbar-border)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 24px", height: 58,
         }}>
@@ -414,7 +415,7 @@ export default function ResultadoPage() {
                   style={{
                     background: saveBtnConfig.bg,
                     color: saveBtnConfig.color,
-                    border: saveState === "saved" ? `1px solid ${C.accent}35` : `1px solid ${C.border}`,
+                    border: saveState === "saved" ? "1px solid rgba(91,227,138,0.30)" : `1px solid ${C.border}`,
                   }}
                 >
                   {saveBtnConfig.icon}
