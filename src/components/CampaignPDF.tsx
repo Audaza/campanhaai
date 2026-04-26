@@ -1137,182 +1137,274 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
       </Page>
 
       {/* ═════════════════════════════════════════════
-          PÁGINA 2 — VISÃO GERAL + ORÇAMENTO
+          PÁGINA 2 — VISÃO GERAL (estilo dashboard Audaza Digital)
       ═════════════════════════════════════════════ */}
       <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.bg, padding: 0, paddingBottom: 38 }}>
 
-        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 22 }}>
+        <View style={{ paddingHorizontal: PAGE_MARGIN_X, paddingTop: 24 }}>
 
-          {/* HERO MINI — gradient + cliente + produto */}
+          {/* IDENTITY — eyebrow + nome cliente + produto + chips de plataformas */}
           <View wrap={false} style={{
-            backgroundColor: C.surface, borderRadius: 12,
-            borderWidth: 1, borderColor: C.border, overflow: "hidden",
-            marginBottom: 14,
+            flexDirection: "row", alignItems: "flex-end",
+            justifyContent: "space-between", gap: 14, marginBottom: 18,
           }}>
-            <View style={{ height: 96, position: "relative", overflow: "hidden" }}>
-              <Svg width={CONTENT_W} height={96} style={{ position: "absolute", top: 0, left: 0 }}>
-                <Defs>
-                  <LinearGradient id="heroMini" x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0%" stopColor={C.brandDark} stopOpacity={1} />
-                    <Stop offset="60%" stopColor={C.brand} stopOpacity={1} />
-                    <Stop offset="100%" stopColor={C.brandCool} stopOpacity={1} />
-                  </LinearGradient>
-                </Defs>
-                <Rect x={0} y={0} width={CONTENT_W} height={96} fill="url(#heroMini)" />
-                <Rect x={CONTENT_W - 120} y={-50} width={200} height={200} rx={100} fill={C.surface} fillOpacity={0.06} />
-              </Svg>
-              <View style={{ padding: 16, flex: 1, justifyContent: "center" }}>
-                <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: "rgba(255,255,255,0.7)", letterSpacing: 1.2, marginBottom: 3 }}>
-                  CLIENTE
-                </Text>
-                <Text style={{ fontSize: T.h1, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.4 }}>
-                  {truncSmart(plan.overview.clientName, 38)}
-                </Text>
-                <Text style={{ fontSize: T.small, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
-                  {truncSmart(plan.overview.product, 70)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Resumo */}
-            <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 14 }}>
-              <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.7 }}>
-                {plan.overview.summary}
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.brand,
+                letterSpacing: 1.4, marginBottom: 5,
+              }}>
+                PLANEJAMENTO · {today.toUpperCase()}
               </Text>
+              <Text style={{
+                fontSize: 22, fontFamily: "Helvetica-Bold", color: C.text,
+                letterSpacing: -0.6, lineHeight: 1.05,
+              }}>
+                {truncSmart(plan.overview.clientName, 40)}
+              </Text>
+              <Text style={{
+                fontSize: T.small, color: C.subtext, marginTop: 4, lineHeight: 1.45,
+              }}>
+                {truncSmart(plan.overview.product, 80)}
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, flexShrink: 0, justifyContent: "flex-end" }}>
+              {plan.overview.platforms.slice(0, 4).map((p, i) => {
+                const cc = platColor(p);
+                return <Chip key={i} label={p} color={cc} bg={platSoft(cc)} />;
+              })}
             </View>
           </View>
 
-          {/* CONFIGURAÇÃO DA CAMPANHA — bloco principal de informações */}
-          <View wrap={false} style={{
-            backgroundColor: C.surface, borderRadius: 12,
-            borderWidth: 1, borderColor: C.border, overflow: "hidden",
-            marginBottom: 14,
-          }}>
-            <View style={{
-              paddingHorizontal: 16, paddingVertical: 10,
-              backgroundColor: C.brandSoft,
-              borderBottomWidth: 1, borderBottomColor: C.brand + "22",
-              flexDirection: "row", alignItems: "center", gap: 8,
-            }}>
-              <View style={{
-                width: 4, height: 14, backgroundColor: C.brand, borderRadius: 2,
-              }} />
-              <Text style={{
-                fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.brand,
-                letterSpacing: 1.3,
-              }}>
-                CONFIGURAÇÃO DA CAMPANHA
-              </Text>
-            </View>
+          {/* HERO STATS — 4 cards pastel (igual referência) */}
+          {(() => {
+            const palette = [
+              { name: "blue",   color: "#5b9eff", bg: "#eaf2ff" },
+              { name: "mint",   color: "#1fb393", bg: "#dcf5ee" },
+              { name: "amber",  color: "#c89121", bg: "#fdf2d7" },
+              { name: "purple", color: "#9b6ee8", bg: "#efe4ff" },
+            ];
+            const cards: { icon: string; label: string; value: string; sub: string; pal: typeof palette[number] }[] = [
+              {
+                icon: "investimento", pal: palette[0],
+                label: plan.overview.dailyBudget ? "Investimento diário" : "Investimento total",
+                value: plan.overview.dailyBudget || plan.overview.totalBudget,
+                sub: plan.overview.dailyBudget ? `× ${plan.overview.duration}` : plan.overview.duration,
+              },
+              {
+                icon: "objetivo", pal: palette[1],
+                label: "Campanhas",
+                value: String(plan.campaigns.length),
+                sub: `${plan.overview.platforms.length} ${plan.overview.platforms.length === 1 ? "plataforma" : "plataformas"}`,
+              },
+              {
+                icon: "periodo", pal: palette[2],
+                label: adSetStatLabel,
+                value: String(totalAdSets),
+                sub: `por campanha: ${(totalAdSets / Math.max(plan.campaigns.length, 1)).toFixed(0)}`,
+              },
+            ];
+            if (totalAds > 0) {
+              cards.push({
+                icon: "objetivo", pal: palette[3],
+                label: adStatLabel,
+                value: String(totalAds),
+                sub: `por grupo: ${(totalAds / Math.max(totalAdSets, 1)).toFixed(0)}`,
+              });
+            }
 
-            {/* Grid 4 colunas: Objetivo · Período · Localização · Investimento */}
-            <View style={{ flexDirection: "row" }}>
-              {(() => {
-                const cells: { eyebrow: string; value: string; icon: string }[] = [
-                  { eyebrow: "OBJETIVO",  value: plan.overview.objective,    icon: "objetivo" },
-                  { eyebrow: "PERÍODO",   value: plan.overview.duration,     icon: "periodo" },
-                ];
-                if (plan.overview.location) {
-                  cells.push({ eyebrow: "LOCALIZAÇÃO", value: truncSmart(plan.overview.location, 24), icon: "localizacao" });
-                }
-                cells.push({
-                  eyebrow: plan.overview.dailyBudget ? "INVEST. DIÁRIO" : "INVESTIMENTO",
-                  value:   plan.overview.dailyBudget || plan.overview.totalBudget,
-                  icon:    "investimento",
-                });
-                return cells.map((c, i) => (
+            return (
+              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }} wrap={false}>
+                {cards.map((c, i) => (
                   <View key={i} style={{
-                    flex: 1, paddingVertical: 11, paddingHorizontal: 11,
-                    borderRightWidth: i < cells.length - 1 ? 1 : 0,
-                    borderRightColor: C.border,
+                    flex: 1, backgroundColor: C.surface, borderRadius: 11,
+                    borderWidth: 1, borderColor: C.border,
+                    padding: 14, position: "relative", overflow: "hidden",
                   }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 5 }}>
-                      <PdfIcon kind={c.icon} color={C.brand} size={11} />
-                      <Text style={{
-                        fontSize: T.micro, fontFamily: "Helvetica-Bold",
-                        color: C.muted, letterSpacing: 0.9,
-                      }}>
-                        {c.eyebrow}
-                      </Text>
+                    {/* Ícone pastel */}
+                    <View style={{
+                      width: 28, height: 28, borderRadius: 8,
+                      backgroundColor: c.pal.bg,
+                      alignItems: "center", justifyContent: "center",
+                      marginBottom: 12,
+                    }}>
+                      <PdfIcon kind={c.icon} color={c.pal.color} size={13} />
                     </View>
                     <Text style={{
-                      fontSize: T.h4, fontFamily: "Helvetica-Bold",
-                      color: C.text, letterSpacing: -0.2, lineHeight: 1.2,
+                      fontSize: T.tiny, color: C.muted, marginBottom: 5, fontFamily: "Helvetica",
+                    }}>
+                      {c.label}
+                    </Text>
+                    <Text style={{
+                      fontSize: T.d1, fontFamily: "Helvetica-Bold", color: C.text,
+                      letterSpacing: -0.6, lineHeight: 1,
                     }}>
                       {c.value}
                     </Text>
+                    <Text style={{
+                      fontSize: T.micro, color: C.muted, marginTop: 6,
+                    }}>
+                      {c.sub}
+                    </Text>
+                    {/* Linha decorativa colorida no rodapé */}
+                    <View style={{
+                      position: "absolute", left: 14, right: 14, bottom: 6,
+                      height: 2, backgroundColor: c.pal.color, opacity: 0.6, borderRadius: 1,
+                    }} />
                   </View>
-                ));
-              })()}
-            </View>
-
-            {/* Plataformas */}
-            <View style={{
-              paddingHorizontal: 16, paddingVertical: 12,
-              borderTopWidth: 1, borderTopColor: C.borderMid,
-              backgroundColor: C.bg,
-            }}>
-              <Text style={{
-                fontSize: T.micro, fontFamily: "Helvetica-Bold",
-                color: C.muted, letterSpacing: 0.9, marginBottom: 6,
-              }}>
-                PLATAFORMAS
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
-                {plan.overview.platforms.map((p, i) => {
-                  const cc = platColor(p);
-                  return <Chip key={i} label={p} color={cc} bg={platSoft(cc)} />;
-                })}
+                ))}
               </View>
-            </View>
-          </View>
+            );
+          })()}
 
-          {/* Stats strip — agora um bloco próprio compacto, abaixo da config */}
+          {/* SECONDARY STRIP — 4 mini metrics inline */}
           <View wrap={false} style={{
-            backgroundColor: C.surface, borderRadius: 12,
+            flexDirection: "row",
+            backgroundColor: C.surface, borderRadius: 11,
             borderWidth: 1, borderColor: C.border,
-            marginBottom: 18, flexDirection: "row",
+            marginBottom: 18, overflow: "hidden",
           }}>
-            {stats.map((s, i) => (
+            {[
+              { icon: "periodo",     label: "Período",     value: plan.overview.duration,                color: "#5b9eff" },
+              { icon: "localizacao", label: "Localização", value: truncSmart(plan.overview.location || "Não definida", 20), color: "#1fb393" },
+              { icon: "objetivo",    label: "Objetivo",    value: plan.overview.objective,               color: "#c89121" },
+              { icon: "investimento",label: "Plataformas", value: String(plan.overview.platforms.length), color: "#9b6ee8" },
+            ].map((m, i, arr) => (
               <View key={i} style={{
-                flex: 1, paddingVertical: 14, alignItems: "center",
-                borderRightWidth: i < stats.length - 1 ? 1 : 0,
+                flex: 1, paddingVertical: 12, paddingHorizontal: 12,
+                flexDirection: "row", alignItems: "center", gap: 9,
+                borderRightWidth: i < arr.length - 1 ? 1 : 0,
                 borderRightColor: C.border,
               }}>
-                <Text style={{
-                  fontSize: T.d2, fontFamily: "Helvetica-Bold", color: C.text,
-                  letterSpacing: -0.5, marginBottom: 2,
+                <View style={{
+                  width: 24, height: 24, borderRadius: 6,
+                  backgroundColor: m.color + "1f",
+                  alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
                 }}>
-                  {s.value}
-                </Text>
-                <Text style={{
-                  fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
-                  letterSpacing: 0.5, textTransform: "uppercase",
-                }}>
-                  {s.label}
-                </Text>
+                  <PdfIcon kind={m.icon} color={m.color} size={11} />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={{ fontSize: 7.5, color: C.muted, letterSpacing: 0.6, fontFamily: "Helvetica-Bold", textTransform: "uppercase" }}>
+                    {m.label}
+                  </Text>
+                  <Text style={{ fontSize: T.h4, color: C.text, fontFamily: "Helvetica-Bold", letterSpacing: -0.2, marginTop: 1 }}>
+                    {m.value}
+                  </Text>
+                </View>
               </View>
             ))}
           </View>
 
-          {/* SEÇÃO — Distribuição de Orçamento */}
-          <SectionTitle eyebrow="Investimento" title="Distribuição de Orçamento" />
+          {/* Resumo estratégico */}
+          <View wrap={false} style={{
+            backgroundColor: C.surface, borderRadius: 11,
+            borderWidth: 1, borderColor: C.border,
+            paddingHorizontal: 16, paddingVertical: 14,
+            marginBottom: 18,
+          }}>
+            <Text style={{
+              fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.brand,
+              letterSpacing: 1.4, marginBottom: 6,
+            }}>
+              RESUMO ESTRATÉGICO
+            </Text>
+            <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.65 }}>
+              {plan.overview.summary}
+            </Text>
+          </View>
 
-          {/* Budget em pares (2 colunas) */}
-          {(() => {
-            const pairs: (typeof plan.budgetDistribution)[] = [];
-            for (let i = 0; i < plan.budgetDistribution.length; i += 2) {
-              pairs.push(plan.budgetDistribution.slice(i, i + 2));
-            }
-            return pairs.map((pair, pi) => (
-              <View key={pi} style={{ flexDirection: "row", gap: 8, marginBottom: 8 }} wrap={false}>
-                {pair.map((b, bi) => (
-                  <BudgetCard key={bi} b={b} maxPct={maxBudgetPct} />
-                ))}
-                {pair.length === 1 && <View style={{ flex: 1 }} />}
-              </View>
-            ));
-          })()}
+          {/* TABELA — Detalhamento por plataforma */}
+          <SectionTitle eyebrow="Investimento" title="Detalhamento por Plataforma" />
+
+          <View style={{
+            backgroundColor: C.surface, borderRadius: 11,
+            borderWidth: 1, borderColor: C.border, overflow: "hidden",
+          }}>
+            {/* Header da tabela */}
+            <View style={{
+              flexDirection: "row", paddingVertical: 9, paddingHorizontal: 14,
+              backgroundColor: C.bg, borderBottomWidth: 1, borderBottomColor: C.border,
+            }} wrap={false}>
+              <Text style={{ flex: 2.2, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7 }}>
+                PLATAFORMA
+              </Text>
+              <Text style={{ flex: 1.2, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7, textAlign: "right" }}>
+                INVESTIMENTO
+              </Text>
+              <Text style={{ flex: 0.7, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7, textAlign: "right" }}>
+                %
+              </Text>
+              <Text style={{ flex: 0.9, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7, textAlign: "right" }}>
+                CAMP.
+              </Text>
+              <Text style={{ flex: 0.9, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7, textAlign: "right" }}>
+                {adSetStatLabel.toUpperCase().substring(0, 8)}.
+              </Text>
+              <Text style={{ flex: 1.6, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: C.muted, letterSpacing: 0.7, paddingLeft: 8 }}>
+                DISTRIBUIÇÃO
+              </Text>
+            </View>
+
+            {plan.budgetDistribution.map((b, i) => {
+              const cc = platColor(b.platform);
+              const platCampaigns = plan.campaigns.filter(cp => cp.platform === b.platform);
+              const platAdSets    = platCampaigns.reduce((s, cp) => s + cp.adSets.length, 0);
+              const relW = Math.round(120 * b.percentage / Math.max(maxBudgetPct, 1));
+              return (
+                <View key={i} wrap={false} style={{
+                  flexDirection: "row", paddingVertical: 11, paddingHorizontal: 14, alignItems: "center",
+                  borderBottomWidth: i < plan.budgetDistribution.length - 1 ? 1 : 0,
+                  borderBottomColor: C.borderMid,
+                }}>
+                  <View style={{ flex: 2.2, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <View style={{
+                      width: 24, height: 24, borderRadius: 7,
+                      backgroundColor: platSoft(cc), borderWidth: 1, borderColor: cc + "26",
+                      alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <Text style={{ fontSize: 11, fontFamily: "Helvetica-Bold", color: cc }}>
+                        {platGlyph(b.platform)}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text }}>
+                        {b.platform}
+                      </Text>
+                      {b.allocation && (
+                        <Text style={{ fontSize: T.micro, color: C.muted, marginTop: 1 }}>
+                          {trunc(b.allocation, 38)}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Text style={{
+                    flex: 1.2, textAlign: "right", fontSize: T.h4, fontFamily: "Helvetica-Bold",
+                    color: C.text, letterSpacing: -0.2,
+                  }}>
+                    {b.amount}
+                  </Text>
+                  <Text style={{ flex: 0.7, textAlign: "right", fontSize: T.small, color: C.subtext }}>
+                    {b.percentage}%
+                  </Text>
+                  <Text style={{ flex: 0.9, textAlign: "right", fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text }}>
+                    {platCampaigns.length}
+                  </Text>
+                  <Text style={{ flex: 0.9, textAlign: "right", fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text }}>
+                    {platAdSets}
+                  </Text>
+                  <View style={{ flex: 1.6, paddingLeft: 8 }}>
+                    <View style={{
+                      height: 4, backgroundColor: C.borderMid, borderRadius: 2, overflow: "hidden",
+                    }}>
+                      <View style={{
+                        height: 4, width: relW, backgroundColor: cc, borderRadius: 2,
+                      }} />
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
 
         </View>
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { CampaignPlan } from "@/types/campaign";
-import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, DollarSign, Target, Layers, FileText, Calendar, MapPin, Activity } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import CampaignPDF from "@/components/CampaignPDF";
 import { PlatformLogo } from "@/components/PlatformLogo";
@@ -377,11 +377,125 @@ export default function ResultadoPage() {
           transform: translateY(-1px);
         }
 
+        /* ── Dashboard layout (Audaza Digital style) ── */
+        .dash-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 12px;
+        }
+
+        .dash-stat {
+          background: ${C.surface};
+          border: 1px solid ${C.border};
+          border-radius: 14px;
+          padding: 22px 22px 24px;
+          display: flex; flex-direction: column;
+          transition: border-color 0.2s, transform 0.2s, background 0.2s;
+          position: relative;
+          overflow: hidden;
+        }
+        .dash-stat:hover {
+          transform: translateY(-2px);
+          border-color: var(--border-mid);
+          background: var(--surface-2);
+        }
+        .dash-stat::after {
+          content: ""; position: absolute; left: 0; right: 0; bottom: 0;
+          height: 3px; opacity: 0.85;
+        }
+        .dash-stat--blue::after   { background: linear-gradient(90deg, transparent, #5b9eff, transparent); }
+        .dash-stat--mint::after   { background: linear-gradient(90deg, transparent, #5be3c2, transparent); }
+        .dash-stat--amber::after  { background: linear-gradient(90deg, transparent, #f5c45b, transparent); }
+        .dash-stat--purple::after { background: linear-gradient(90deg, transparent, #b78fff, transparent); }
+
+        .dash-stat__icon {
+          width: 38px; height: 38px; border-radius: 11px;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 18px;
+        }
+        .dash-stat--blue   .dash-stat__icon { background: rgba(91,158,255,0.15);  color: #5b9eff; }
+        .dash-stat--mint   .dash-stat__icon { background: rgba(91,227,194,0.16);  color: #5be3c2; }
+        .dash-stat--amber  .dash-stat__icon { background: rgba(245,196,91,0.16);  color: #f5c45b; }
+        .dash-stat--purple .dash-stat__icon { background: rgba(183,143,255,0.16); color: #b78fff; }
+
+        :root[data-theme="light"] .dash-stat--blue   .dash-stat__icon { background: rgba(91,158,255,0.10); }
+        :root[data-theme="light"] .dash-stat--mint   .dash-stat__icon { background: rgba(91,227,194,0.14); }
+        :root[data-theme="light"] .dash-stat--amber  .dash-stat__icon { background: rgba(245,196,91,0.14); }
+        :root[data-theme="light"] .dash-stat--purple .dash-stat__icon { background: rgba(183,143,255,0.14); }
+
+        .dash-stat__label {
+          font-size: 13px; color: ${C.muted};
+          margin: 0 0 8px; font-weight: 400;
+        }
+        .dash-stat__value {
+          font-size: 30px; font-weight: 500; color: ${C.text};
+          margin: 0; letter-spacing: -0.04em; line-height: 1;
+          font-variant-numeric: tabular-nums;
+        }
+        .dash-stat__sub {
+          font-size: 12px; color: ${C.muted};
+          margin: 8px 0 0; font-weight: 400;
+        }
+
+        /* Mini metrics strip */
+        .dash-mini {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 0;
+          background: ${C.surface};
+          border: 1px solid ${C.border};
+          border-radius: 14px;
+          overflow: hidden;
+        }
+        .dash-mini__cell {
+          display: flex; align-items: center; gap: 12px;
+          padding: 16px 18px;
+          border-right: 1px solid ${C.border};
+        }
+        .dash-mini__cell:last-child { border-right: none; }
+        .dash-mini__icon {
+          width: 30px; height: 30px; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .dash-mini__label {
+          font-size: 11px; color: ${C.muted}; margin: 0;
+          letter-spacing: 0.04em; font-weight: 500;
+        }
+        .dash-mini__value {
+          font-size: 15px; font-weight: 500; color: ${C.text};
+          margin: 2px 0 0; letter-spacing: -0.015em; line-height: 1.2;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        @media (max-width: 720px) {
+          .dash-mini__cell { border-right: none; border-bottom: 1px solid ${C.border}; }
+          .dash-mini__cell:last-child { border-bottom: none; }
+        }
+
+        /* Table */
+        .dash-table__head {
+          display: flex; gap: 14px;
+          padding: 14px 22px;
+          background: var(--surface-2);
+          border-bottom: 1px solid ${C.border};
+          font-size: 10.5px; font-weight: 600; color: ${C.muted};
+          letter-spacing: 0.08em;
+        }
+        .dash-table__row {
+          display: flex; gap: 14px; align-items: center;
+          padding: 14px 22px;
+          border-bottom: 1px solid ${C.border};
+          transition: background 0.15s;
+        }
+        .dash-table__row:last-child { border-bottom: none; }
+        .dash-table__row:hover { background: var(--surface-2); }
+
         @media (max-width: 720px) {
           .budget-grid { grid-template-columns: 1fr !important; }
           .hero-row { flex-direction: column !important; align-items: flex-start !important; }
           .hero-budget { text-align: left !important; }
           .stat-cell { padding: 14px 10px; }
+          .dash-table__head, .dash-table__row { font-size: 11px; padding: 10px 14px; gap: 8px; }
         }
       `}</style>
 
@@ -441,177 +555,218 @@ export default function ResultadoPage() {
 
         <main style={{ maxWidth: 960, margin: "0 auto", padding: "36px 20px 120px" }}>
 
-          {/* ═════ HERO / OVERVIEW ═════ */}
-          <section className="card rise d-0" style={{ marginBottom: 28, overflow: "hidden" }}>
-            <div style={{
-              background: `linear-gradient(135deg, #002d6b 0%, ${C.brandDark} 28%, ${C.brand} 62%, #34aadc 100%)`,
-              padding: "36px 36px 30px", position: "relative", overflow: "hidden",
-            }}>
-              {/* Gradient mesh decorativo */}
-              <div style={{
-                position: "absolute", top: -100, right: -80, width: 340, height: 340,
-                borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                position: "absolute", bottom: -60, right: 60, width: 200, height: 200,
-                borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              <div style={{
-                position: "absolute", top: 24, right: 240, width: 90, height: 90,
-                borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none",
-              }} />
-
-              {/* Eyebrow */}
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 20 }}>
-                <Sparkles size={13} style={{ color: "rgba(255,255,255,0.85)" }} />
+          {/* ═════ IDENTITY STRIP ═════ */}
+          <section className="rise d-0" style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 240 }}>
                 <p style={{
-                  fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em",
-                  textTransform: "uppercase", color: "rgba(255,255,255,0.72)", margin: 0,
+                  fontSize: 10, fontWeight: 600, color: C.brand,
+                  letterSpacing: "0.16em", textTransform: "uppercase", margin: "0 0 8px",
                 }}>
-                  Planejamento Estratégico · {new Date().toLocaleDateString("pt-BR")}
+                  Planejamento · {new Date().toLocaleDateString("pt-BR")}
+                </p>
+                <h1 className="font-display" style={{
+                  fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 500, color: C.text,
+                  margin: 0, letterSpacing: "-0.04em", lineHeight: 1.05,
+                }}>
+                  {plan.overview.clientName}
+                </h1>
+                <p style={{
+                  fontSize: 14, color: C.subtext, margin: "8px 0 0", lineHeight: 1.5, fontWeight: 300,
+                }}>
+                  {plan.overview.product}
                 </p>
               </div>
-
-              <div className="hero-row" style={{
-                display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-                gap: 20, flexWrap: "wrap", position: "relative",
-              }}>
-                <div style={{ flex: 1, minWidth: 260 }}>
-                  <h1 className="font-display" style={{
-                    fontSize: 36, fontWeight: 500, color: "white", margin: "0 0 6px",
-                    letterSpacing: "-0.045em", lineHeight: 1.05,
-                  }}>
-                    {plan.overview.clientName}
-                  </h1>
-                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.82)", margin: 0, lineHeight: 1.5, fontWeight: 300 }}>
-                    {plan.overview.product}
-                  </p>
-                </div>
-
-                <div className="hero-budget" style={{ textAlign: "right", flexShrink: 0 }}>
-                  <p style={{
-                    fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.68)",
-                    margin: "0 0 6px", letterSpacing: "0.16em", textTransform: "uppercase",
-                  }}>
-                    {plan.overview.dailyBudget ? "Invest. Diário" : "Orçamento"}
-                  </p>
-                  <p className="font-display" style={{
-                    fontSize: 36, fontWeight: 500, color: "white",
-                    margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
-                    fontVariantNumeric: "tabular-nums",
-                  }}>
-                    {plan.overview.dailyBudget || plan.overview.totalBudget}
-                  </p>
-                </div>
-              </div>
-
-              {/* Chips da campanha */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 22, position: "relative" }}>
-                {[plan.overview.objective, plan.overview.duration, ...plan.overview.platforms].map((tag, i) => (
-                  <span key={i} style={{
-                    fontSize: 11.5, fontWeight: 600, color: "rgba(255,255,255,0.95)",
-                    background: "rgba(255,255,255,0.16)",
-                    border: "1px solid rgba(255,255,255,0.22)",
-                    padding: "4px 12px", borderRadius: 999,
-                    backdropFilter: "blur(6px)",
-                  }}>
-                    {tag}
-                  </span>
-                ))}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
+                {plan.overview.platforms.map((p, i) => {
+                  const c = pc(p);
+                  return (
+                    <span key={i} style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontSize: 12, fontWeight: 500, color: c.color,
+                      background: c.bg, border: `1px solid ${c.color}26`,
+                      padding: "5px 11px", borderRadius: 8,
+                    }}>
+                      <PlatformLogo platform={p} size={13} />
+                      {p}
+                    </span>
+                  );
+                })}
               </div>
             </div>
+          </section>
 
-            {/* Summary */}
-            <div style={{ padding: "24px 36px 2px" }}>
-              <p style={{
-                fontSize: 14.5, color: C.subtext, lineHeight: 1.72, margin: 0, maxWidth: 720,
-              }}>
-                {plan.overview.summary}
-              </p>
+          {/* ═════ HERO STATS — 4 cards ═════ */}
+          <section className="rise d-1" style={{ marginBottom: 18 }}>
+            <div className="dash-grid">
+              {(() => {
+                const items = [
+                  {
+                    icon: DollarSign, color: "blue",
+                    label: plan.overview.dailyBudget ? "Investimento diário" : "Investimento total",
+                    value: plan.overview.dailyBudget || plan.overview.totalBudget,
+                    sub: plan.overview.dailyBudget ? `× ${plan.overview.duration}` : `${plan.overview.duration}`,
+                  },
+                  {
+                    icon: Target, color: "mint",
+                    label: "Campanhas",
+                    value: String(plan.campaigns.length),
+                    sub: `${plan.overview.platforms.length} ${plan.overview.platforms.length === 1 ? "plataforma" : "plataformas"}`,
+                  },
+                  {
+                    icon: Layers, color: "amber",
+                    label: adSetStatLabel,
+                    value: String(totalAdSets),
+                    sub: `por campanha: ${(totalAdSets / Math.max(plan.campaigns.length, 1)).toFixed(0)}`,
+                  },
+                  ...(totalAds > 0 ? [{
+                    icon: FileText, color: "purple",
+                    label: adStatLabel,
+                    value: String(totalAds),
+                    sub: `por grupo: ${(totalAds / Math.max(totalAdSets, 1)).toFixed(0)}`,
+                  }] : []),
+                ];
+                return items.map((s, i) => (
+                  <div key={i} className={`dash-stat dash-stat--${s.color}`}>
+                    <div className="dash-stat__icon">
+                      <s.icon size={18} strokeWidth={1.8} />
+                    </div>
+                    <p className="dash-stat__label">{s.label}</p>
+                    <p className="dash-stat__value font-display">{s.value}</p>
+                    <p className="dash-stat__sub">{s.sub}</p>
+                  </div>
+                ));
+              })()}
             </div>
+          </section>
 
-            {/* Stats strip */}
-            <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, marginTop: 24 }}>
-              {stats.map((s, i) => (
-                <div
-                  key={i}
-                  className="stat-cell"
-                  style={s.accent ? {
-                    background: "linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.01) 100%)",
-                  } : undefined}
-                >
-                  <p className="font-display" style={{
-                    fontSize: 30, fontWeight: 500,
-                    color: s.accent ? C.accent : C.text,
-                    margin: "0 0 4px", letterSpacing: "-0.04em", lineHeight: 1,
-                    fontVariantNumeric: "tabular-nums",
-                  }}>
-                    {s.value}
-                  </p>
-                  <p style={{
-                    fontSize: 10, fontWeight: 600,
-                    color: s.accent ? C.accent : C.muted,
-                    margin: 0, letterSpacing: "0.09em", textTransform: "uppercase",
-                  }}>
-                    {s.label}
-                  </p>
+          {/* ═════ SECONDARY STRIP — 4 small ═════ */}
+          <section className="rise d-2" style={{ marginBottom: 28 }}>
+            <div className="dash-mini">
+              {[
+                { icon: Calendar, label: "Período",     value: plan.overview.duration,                color: C.brand },
+                { icon: MapPin,   label: "Localização", value: plan.overview.location || "Não definida", color: "#5be3c2" },
+                { icon: Target,   label: "Objetivo",    value: plan.overview.objective,               color: "#f5c45b" },
+                { icon: Activity, label: "Plataformas", value: `${plan.overview.platforms.length}`,   color: "#b78fff" },
+              ].map((m, i) => (
+                <div key={i} className="dash-mini__cell">
+                  <div className="dash-mini__icon" style={{ background: `${m.color}1a`, color: m.color }}>
+                    <m.icon size={15} strokeWidth={1.8} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p className="dash-mini__label">{m.label}</p>
+                    <p className="dash-mini__value font-display">{m.value}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* ═════ ORÇAMENTO ═════ */}
-          <section className="rise d-1" style={{ marginBottom: 32 }}>
+          {/* ═════ RESUMO ESTRATÉGICO ═════ */}
+          <section className="rise d-2" style={{ marginBottom: 28 }}>
+            <div className="card" style={{ padding: "20px 24px" }}>
+              <p style={{
+                fontSize: 10, fontWeight: 600, color: C.brand,
+                letterSpacing: "0.16em", textTransform: "uppercase", margin: "0 0 8px",
+              }}>
+                Resumo Estratégico
+              </p>
+              <p style={{
+                fontSize: 14.5, color: C.subtext, lineHeight: 1.7, margin: 0, fontWeight: 300,
+                maxWidth: 780,
+              }}>
+                {plan.overview.summary}
+              </p>
+            </div>
+          </section>
+
+          {/* ═════ TABELA — Detalhamento por plataforma ═════ */}
+          <section className="rise d-3" style={{ marginBottom: 32 }}>
             <SectionTitle
               eyebrow="Investimento"
-              title="Distribuição de Orçamento"
-              subtitle="Como o valor total é alocado entre as plataformas selecionadas"
+              title="Detalhamento por plataforma"
+              subtitle="Como o orçamento e a estrutura se distribuem"
             />
-            <div className="budget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="card" style={{ overflow: "hidden" }}>
+              {/* Table header */}
+              <div className="dash-table__head">
+                <div style={{ flex: "2" }}>PLATAFORMA</div>
+                <div style={{ flex: "1.2", textAlign: "right" }}>INVESTIMENTO</div>
+                <div style={{ flex: "0.8", textAlign: "right" }}>%</div>
+                <div style={{ flex: "0.8", textAlign: "right" }}>CAMPANHAS</div>
+                <div style={{ flex: "0.8", textAlign: "right" }}>{adSetStatLabel.toUpperCase()}</div>
+                <div style={{ flex: "1.4" }}>DISTRIBUIÇÃO</div>
+              </div>
+
               {plan.budgetDistribution.map((b, i) => {
                 const c = pc(b.platform);
+                const platformCampaigns = plan.campaigns.filter(cp => cp.platform === b.platform);
+                const platformAdSets    = platformCampaigns.reduce((s, cp) => s + cp.adSets.length, 0);
                 const relW = (b.percentage / maxBudgetPct) * 100;
                 return (
-                  <div key={i} className="card card-hover" style={{ padding: "20px 22px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 14 }}>
+                  <div key={i} className="dash-table__row">
+                    <div style={{ flex: "2", display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
                       <div style={{
-                        width: 42, height: 42, background: C.surface, borderRadius: 11,
+                        width: 32, height: 32, borderRadius: 9, flexShrink: 0,
+                        background: c.bg, border: `1px solid ${c.color}26`,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        flexShrink: 0, border: `1px solid ${C.border}`,
-                        boxShadow: "0 1px 3px rgba(13,17,23,0.05)",
                       }}>
-                        <PlatformLogo platform={b.platform} size={24} />
+                        <PlatformLogo platform={b.platform} size={17} />
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ minWidth: 0 }}>
                         <p style={{
-                          fontSize: 14, fontWeight: 700, color: C.text, margin: 0,
-                          letterSpacing: "-0.015em",
+                          fontSize: 13.5, fontWeight: 500, color: C.text, margin: 0,
+                          letterSpacing: "-0.012em",
                           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         }}>
                           {b.platform}
                         </p>
-                        <p style={{ fontSize: 11.5, color: C.muted, margin: "2px 0 0" }}>
-                          {b.percentage}% do orçamento total
-                        </p>
+                        {b.allocation && (
+                          <p style={{
+                            fontSize: 11.5, color: C.muted, margin: "2px 0 0",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            maxWidth: 220,
+                          }}>
+                            {b.allocation}
+                          </p>
+                        )}
                       </div>
-                      <p className="font-display" style={{
-                        fontSize: 22, fontWeight: 500, color: c.color,
-                        margin: 0, flexShrink: 0, letterSpacing: "-0.04em",
-                        fontVariantNumeric: "tabular-nums",
+                    </div>
+                    <div className="font-display" style={{
+                      flex: "1.2", textAlign: "right", fontVariantNumeric: "tabular-nums",
+                      fontSize: 15, fontWeight: 500, color: C.text, letterSpacing: "-0.02em",
+                    }}>
+                      {b.amount}
+                    </div>
+                    <div style={{
+                      flex: "0.8", textAlign: "right", fontVariantNumeric: "tabular-nums",
+                      fontSize: 13, color: C.subtext,
+                    }}>
+                      {b.percentage}%
+                    </div>
+                    <div className="font-display" style={{
+                      flex: "0.8", textAlign: "right", fontVariantNumeric: "tabular-nums",
+                      fontSize: 14, fontWeight: 500, color: C.text,
+                    }}>
+                      {platformCampaigns.length}
+                    </div>
+                    <div className="font-display" style={{
+                      flex: "0.8", textAlign: "right", fontVariantNumeric: "tabular-nums",
+                      fontSize: 14, fontWeight: 500, color: C.text,
+                    }}>
+                      {platformAdSets}
+                    </div>
+                    <div style={{ flex: "1.4", display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{
+                        flex: 1, height: 4, background: C.borderMid, borderRadius: 2, overflow: "hidden",
                       }}>
-                        {b.amount}
-                      </p>
+                        <div style={{
+                          height: "100%", width: `${relW}%`,
+                          background: `linear-gradient(90deg, ${c.color}, ${c.color}cc)`,
+                          borderRadius: 2,
+                        }} />
+                      </div>
                     </div>
-                    <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${relW}%`, color: c.color }} />
-                    </div>
-                    {b.allocation && (
-                      <p style={{ fontSize: 12, color: C.subtext, lineHeight: 1.6, margin: "12px 0 0" }}>
-                        {b.allocation}
-                      </p>
-                    )}
                   </div>
                 );
               })}
