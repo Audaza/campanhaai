@@ -11,22 +11,24 @@ import { savePlan } from "@/lib/savedPlans";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 
 /* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS
+   DESIGN TOKENS — paleta dark linkbio (audaza.com/apps)
 ═══════════════════════════════════════════════════════ */
 const C = {
-  bg:        "#f4f6fa",
-  surface:   "#ffffff",
-  border:    "#e4e8ef",
-  borderMid: "#eef0f5",
-  text:      "#0d1117",
-  subtext:   "#475263",
-  muted:     "#8994a6",
-  soft:      "#c8d0db",
-  brand:     "#0071E3",
-  brandDark: "#0057c2",
-  brandSoft: "#EBF5FF",
-  accent:    "#16a34a",
-  accentBg:  "#dcfce7",
+  bg:        "#06070b",
+  surface:   "rgba(255,255,255,0.03)",
+  surface2:  "rgba(255,255,255,0.06)",
+  border:    "rgba(245,245,247,0.08)",
+  borderMid: "rgba(245,245,247,0.14)",
+  text:      "#f5f5f7",
+  subtext:   "rgba(245,245,247,0.85)",
+  muted:     "rgba(245,245,247,0.42)",
+  soft:      "rgba(245,245,247,0.20)",
+  brand:     "#5b9eff",
+  brandDark: "#3a72d8",
+  brandCool: "#7ec8ff",
+  brandSoft: "rgba(91,158,255,0.12)",
+  accent:    "#5be38a",
+  accentBg:  "rgba(91,227,138,0.12)",
 } as const;
 
 /* ═══════════════════════════════════════════════════════
@@ -253,11 +255,10 @@ export default function ResultadoPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; }
 
-        .res-root { font-family: 'Onest', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .res-root { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        .display { font-family: 'Space Grotesk', 'Inter', sans-serif; letter-spacing: -0.02em; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -283,40 +284,41 @@ export default function ResultadoPage() {
           background: ${C.surface};
           border: 1px solid ${C.border};
           border-radius: 14px;
-          box-shadow: 0 1px 2px rgba(13,17,23,0.04), 0 6px 24px rgba(13,17,23,0.03);
-          transition: box-shadow 0.25s, transform 0.25s;
+          transition: border-color 0.25s, background 0.25s, transform 0.25s;
         }
         .card-hover:hover {
-          box-shadow: 0 4px 8px rgba(13,17,23,0.05), 0 14px 44px rgba(13,17,23,0.06);
+          border-color: ${C.borderMid};
+          background: ${C.surface2};
           transform: translateY(-1px);
         }
 
         .topbar-btn {
           display: inline-flex; align-items: center; gap: 6px;
           background: transparent; border: 1px solid transparent;
-          cursor: pointer; font-size: 13px; font-weight: 600;
-          color: ${C.subtext}; font-family: inherit;
+          cursor: pointer; font-size: 13px; font-weight: 500;
+          color: ${C.muted}; font-family: inherit;
           padding: 7px 12px; border-radius: 8px;
           transition: all 0.18s; letter-spacing: -0.01em;
         }
-        .topbar-btn:hover { background: ${C.bg}; color: ${C.text}; }
+        .topbar-btn:hover { background: ${C.surface}; color: ${C.text}; border-color: ${C.border}; }
 
         .export-btn {
           display: inline-flex; align-items: center; gap: 7px;
-          padding: 9px 16px; border-radius: 9px; border: none;
-          font-size: 13px; font-weight: 700; font-family: inherit;
-          background: ${C.text}; color: white;
+          padding: 9px 16px; border-radius: 10px; border: none;
+          font-size: 13px; font-weight: 600; font-family: inherit;
+          background: linear-gradient(135deg, ${C.brand}, ${C.brandDark});
+          color: white;
           cursor: pointer; transition: all 0.2s;
-          box-shadow: 0 1px 3px rgba(13,17,23,0.2), 0 4px 14px rgba(13,17,23,0.12);
-          letter-spacing: -0.015em;
+          box-shadow: 0 4px 14px rgba(91,158,255,0.35);
+          letter-spacing: -0.01em;
         }
         .export-btn:hover {
-          background: #1a2332; transform: translateY(-1px);
-          box-shadow: 0 2px 6px rgba(13,17,23,0.24), 0 8px 22px rgba(13,17,23,0.18);
+          filter: brightness(1.08); transform: translateY(-1px);
+          box-shadow: 0 6px 18px rgba(91,158,255,0.45);
         }
         .export-btn:disabled {
-          background: ${C.border}; color: ${C.muted}; cursor: not-allowed;
-          transform: none; box-shadow: none;
+          background: ${C.surface2}; color: ${C.muted}; cursor: not-allowed;
+          transform: none; box-shadow: none; filter: none;
         }
 
         .stat-cell {
@@ -325,7 +327,7 @@ export default function ResultadoPage() {
           transition: background 0.15s;
         }
         .stat-cell:last-child { border-right: none; }
-        .stat-cell:hover { background: #fafbfd; }
+        .stat-cell:hover { background: ${C.surface2}; }
 
         .bar-track { background: ${C.borderMid}; border-radius: 99px; height: 5px; overflow: hidden; }
         .bar-fill {
@@ -335,19 +337,20 @@ export default function ResultadoPage() {
         }
 
         .adset-card {
-          background: ${C.bg}; border-radius: 11px;
-          border: 1px solid ${C.borderMid}; overflow: hidden;
-          transition: border-color 0.2s;
+          background: rgba(255,255,255,0.02); border-radius: 11px;
+          border: 1px solid ${C.border}; overflow: hidden;
+          transition: border-color 0.2s, background 0.2s;
         }
+        .adset-card:hover { border-color: ${C.borderMid}; background: ${C.surface}; }
 
         .ad-item {
-          background: ${C.surface}; border-radius: 9px;
-          border: 1px solid ${C.borderMid}; padding: 12px 14px;
+          background: ${C.surface2}; border-radius: 9px;
+          border: 1px solid ${C.border}; padding: 12px 14px;
           transition: all 0.2s;
         }
         .ad-item:hover {
-          box-shadow: 0 2px 10px rgba(13,17,23,0.05);
-          border-color: ${C.border};
+          background: rgba(255,255,255,0.10);
+          border-color: ${C.borderMid};
         }
 
         .tl-node {
@@ -379,14 +382,14 @@ export default function ResultadoPage() {
         }
       `}</style>
 
-      <div className="res-root" style={{ minHeight: "100vh", background: C.bg }}>
+      <div className="res-root" style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
 
         {/* ═════ TOPBAR ═════ */}
         <header style={{
           position: "sticky", top: 0, zIndex: 50,
-          background: "rgba(244,246,250,0.82)",
-          backdropFilter: "blur(22px) saturate(180%)",
-          WebkitBackdropFilter: "blur(22px) saturate(180%)",
+          background: "rgba(6,7,11,0.72)",
+          backdropFilter: "blur(16px) saturate(140%)",
+          WebkitBackdropFilter: "blur(16px) saturate(140%)",
           borderBottom: `1px solid ${C.border}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 24px", height: 58,
@@ -396,16 +399,16 @@ export default function ResultadoPage() {
             Menu
           </button>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: `linear-gradient(135deg, ${C.brandDark}, #34aadc)`,
+              width: 24, height: 24, borderRadius: 7,
+              background: `linear-gradient(135deg, ${C.brand}, ${C.brandDark})`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 6px rgba(0,113,227,0.3)",
+              boxShadow: "0 4px 14px rgba(91,158,255,0.35)",
             }}>
-              <span style={{ fontSize: 13, color: "white", fontWeight: 800, letterSpacing: "-0.03em" }}>C</span>
+              <span style={{ fontSize: 11, color: "white", fontWeight: 700 }}>C</span>
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.025em" }}>
+            <span className="display" style={{ fontSize: 15, fontWeight: 600, color: C.text }}>
               Campanha Tráfego · Audaza
             </span>
           </div>

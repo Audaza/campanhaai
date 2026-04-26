@@ -531,13 +531,13 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
 
       {/* Top bar */}
       <header style={{
-        background:"rgba(255,255,255,0.82)",
-        backdropFilter:"saturate(200%) blur(24px)",
-        WebkitBackdropFilter:"saturate(200%) blur(24px)",
-        borderBottom:"1px solid var(--border)",
+        background:"rgba(6,7,11,0.72)",
+        backdropFilter:"blur(16px) saturate(140%)",
+        WebkitBackdropFilter:"blur(16px) saturate(140%)",
+        borderBottom:"1px solid var(--rule)",
         display:"flex", alignItems:"center", justifyContent:"space-between",
-        height:52, position:"sticky", top:0, zIndex:10,
-        padding:"0 16px",
+        height:54, position:"sticky", top:0, zIndex:10,
+        padding:"0 18px",
       }}>
         <button type="button" onClick={() => router.push("/")} style={{
           background:"transparent", border:"none", cursor:"pointer",
@@ -550,26 +550,27 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
         >
           <span style={{ fontSize:14 }}>←</span> Menu
         </button>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <div className="font-display" style={{ display:"flex", alignItems:"center", gap:10 }}>
           <div style={{
-            width:22, height:22, borderRadius:6,
-            background:"linear-gradient(135deg,#0071E3,#34aadc)",
+            width:24, height:24, borderRadius:7,
+            background:"linear-gradient(135deg,var(--primary),var(--primary-dark))",
             display:"flex", alignItems:"center", justifyContent:"center",
+            boxShadow:"0 4px 14px rgba(91,158,255,0.35)",
           }}>
-            <span style={{ fontSize:11, color:"white", fontWeight:800 }}>C</span>
+            <span style={{ fontSize:11, color:"white", fontWeight:700 }}>C</span>
           </div>
-          <span style={{ fontSize:15, fontWeight:700, color:"var(--text)", letterSpacing:"-0.02em" }}>
-            Campanha Tráfego | Audaza
+          <span style={{ fontSize:15, fontWeight:600, color:"var(--text)" }}>
+            Campanha Tráfego · Audaza
           </span>
         </div>
         <span style={{
-          fontSize: 10, fontWeight: 700, color: "#16a34a",
-          background: "#dcfce7", border: "1px solid #86efac",
+          fontSize: 10, fontWeight: 600, color: "var(--success)",
+          background: "var(--success-dim)", border: "1px solid rgba(91,227,138,0.3)",
           padding: "3px 8px", borderRadius: 999,
           letterSpacing: "0.04em",
           fontVariantNumeric: "tabular-nums",
         }}>
-          v2.3 · RSA + IA
+          v3.0 · DARK
         </span>
       </header>
 
@@ -629,8 +630,9 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
           {/* Card */}
           <div style={{
             background:"var(--surface)",
-            borderRadius:20,
-            boxShadow:"0 2px 24px rgba(0,0,0,0.07),0 0 0 1px var(--border)",
+            borderRadius:18,
+            border:"1px solid var(--border)",
+            backdropFilter:"blur(8px)",
             padding: step === 5 ? "28px 24px" : "32px 30px",
             overflow:"hidden",
           }}>

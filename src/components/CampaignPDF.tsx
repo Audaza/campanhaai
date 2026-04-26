@@ -7,24 +7,26 @@ import { getHierarchyLabels } from "@/lib/hierarchy";
 import { parseRSA } from "@/lib/rsaFormat";
 
 /* ═══════════════════════════════════════════════════════
-   DESIGN TOKENS — sistema único e consistente
+   DESIGN TOKENS — paleta linkbio adaptada para PDF
+   (mantém fundo claro pra impressão; brand color novo)
 ═══════════════════════════════════════════════════════ */
 const C = {
-  bg:        "#f4f6fa",
+  bg:        "#f5f6fa",
   surface:   "#ffffff",
-  border:    "#e4e8ef",
+  border:    "#e6e8ef",
   borderMid: "#eef0f5",
-  text:      "#0d1117",
-  subtext:   "#475263",
-  muted:     "#8994a6",
-  soft:      "#c8d0db",
-  brand:     "#0071E3",
-  brandDark: "#0057c2",
-  brandSoft: "#EBF5FF",
-  accent:    "#16a34a",
-  accentBg:  "#dcfce7",
-  warning:   "#f59e0b",
-  warningBg: "#fef3c7",
+  text:      "#0a0c12",
+  subtext:   "#4a5163",
+  muted:     "#8a92a3",
+  soft:      "#c2cad6",
+  brand:     "#5b9eff",      /* azul linkbio */
+  brandDark: "#3a72d8",
+  brandCool: "#7ec8ff",
+  brandSoft: "#eaf2ff",
+  accent:    "#22c55e",
+  accentBg:  "#d8f5e1",
+  warning:   "#f5c45b",
+  warningBg: "#fff5d8",
 } as const;
 
 const PAGE_W = 595;
@@ -1011,10 +1013,10 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
           <Svg width={PAGE_W} height={842}>
             <Defs>
               <LinearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0%" stopColor="#002d6b" stopOpacity={1} />
+                <Stop offset="0%" stopColor="#1a2851" stopOpacity={1} />
                 <Stop offset="40%" stopColor={C.brandDark} stopOpacity={1} />
                 <Stop offset="75%" stopColor={C.brand} stopOpacity={1} />
-                <Stop offset="100%" stopColor="#34aadc" stopOpacity={1} />
+                <Stop offset="100%" stopColor={C.brandCool} stopOpacity={1} />
               </LinearGradient>
             </Defs>
             <Rect x={0} y={0} width={PAGE_W} height={842} fill="url(#cover)" />
@@ -1153,7 +1155,7 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
                   <LinearGradient id="heroMini" x1="0" y1="0" x2="1" y2="0">
                     <Stop offset="0%" stopColor={C.brandDark} stopOpacity={1} />
                     <Stop offset="60%" stopColor={C.brand} stopOpacity={1} />
-                    <Stop offset="100%" stopColor="#34aadc" stopOpacity={1} />
+                    <Stop offset="100%" stopColor={C.brandCool} stopOpacity={1} />
                   </LinearGradient>
                 </Defs>
                 <Rect x={0} y={0} width={CONTENT_W} height={96} fill="url(#heroMini)" />
