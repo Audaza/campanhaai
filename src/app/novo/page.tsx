@@ -187,11 +187,21 @@ function Field({ label, hint, optional, children }: {
 
 function CardTitle({ title, sub }: { title: string; sub?: string }) {
   return (
-    <div style={{ marginBottom:22 }}>
-      <h2 style={{ fontSize:21, fontWeight:700, color:"var(--text)", margin:0, letterSpacing:"-0.025em", lineHeight:1.25 }}>
+    <div style={{ marginBottom: 22 }}>
+      <h2 className="font-display" style={{
+        fontSize: 24, fontWeight: 500, color: "var(--text)",
+        margin: 0, letterSpacing: "-0.035em", lineHeight: 1.15,
+      }}>
         {title}
       </h2>
-      {sub && <p style={{ fontSize:14, color:"var(--muted)", margin:"5px 0 0", fontWeight:400 }}>{sub}</p>}
+      {sub && (
+        <p style={{
+          fontSize: 14, color: "var(--text-sub)",
+          margin: "6px 0 0", fontWeight: 300, lineHeight: 1.55,
+        }}>
+          {sub}
+        </p>
+      )}
     </div>
   );
 }
@@ -584,12 +594,12 @@ ${d.platforms.includes("Google Ads") && d.googleCampaignType === "Demand Gen" ? 
                         </svg>
                       ) : n}
                     </div>
-                    <span style={{
-                      fontSize:10, fontWeight: active ? 600 : 400,
+                    <span className="font-display" style={{
+                      fontSize: 10.5, fontWeight: active ? 600 : 500,
                       color: active ? "var(--text)" : done ? "var(--success)" : "var(--muted)",
-                      letterSpacing:"0.01em",
-                      transition:"all 0.2s",
-                      whiteSpace:"nowrap" as const,
+                      letterSpacing: "0.02em",
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap" as const,
                     }}>
                       {label}
                     </span>

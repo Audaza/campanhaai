@@ -479,26 +479,26 @@ export default function ResultadoPage() {
                 gap: 20, flexWrap: "wrap", position: "relative",
               }}>
                 <div style={{ flex: 1, minWidth: 260 }}>
-                  <h1 style={{
-                    fontSize: 34, fontWeight: 800, color: "white", margin: "0 0 6px",
-                    letterSpacing: "-0.045em", lineHeight: 1.08,
+                  <h1 className="font-display" style={{
+                    fontSize: 36, fontWeight: 500, color: "white", margin: "0 0 6px",
+                    letterSpacing: "-0.045em", lineHeight: 1.05,
                   }}>
                     {plan.overview.clientName}
                   </h1>
-                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", margin: 0, lineHeight: 1.45 }}>
+                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.82)", margin: 0, lineHeight: 1.5, fontWeight: 300 }}>
                     {plan.overview.product}
                   </p>
                 </div>
 
                 <div className="hero-budget" style={{ textAlign: "right", flexShrink: 0 }}>
                   <p style={{
-                    fontSize: 10.5, fontWeight: 700, color: "rgba(255,255,255,0.68)",
-                    margin: "0 0 6px", letterSpacing: "0.12em", textTransform: "uppercase",
+                    fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.68)",
+                    margin: "0 0 6px", letterSpacing: "0.16em", textTransform: "uppercase",
                   }}>
                     {plan.overview.dailyBudget ? "Invest. Diário" : "Orçamento"}
                   </p>
-                  <p style={{
-                    fontSize: 34, fontWeight: 800, color: "white",
+                  <p className="font-display" style={{
+                    fontSize: 36, fontWeight: 500, color: "white",
                     margin: 0, letterSpacing: "-0.045em", lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
                   }}>
@@ -542,16 +542,16 @@ export default function ResultadoPage() {
                     background: "linear-gradient(135deg, rgba(22,163,74,0.08) 0%, rgba(22,163,74,0.01) 100%)",
                   } : undefined}
                 >
-                  <p style={{
-                    fontSize: 30, fontWeight: 800,
+                  <p className="font-display" style={{
+                    fontSize: 30, fontWeight: 500,
                     color: s.accent ? C.accent : C.text,
-                    margin: "0 0 4px", letterSpacing: "-0.05em", lineHeight: 1,
+                    margin: "0 0 4px", letterSpacing: "-0.04em", lineHeight: 1,
                     fontVariantNumeric: "tabular-nums",
                   }}>
                     {s.value}
                   </p>
                   <p style={{
-                    fontSize: 10.5, fontWeight: 700,
+                    fontSize: 10, fontWeight: 600,
                     color: s.accent ? C.accent : C.muted,
                     margin: 0, letterSpacing: "0.09em", textTransform: "uppercase",
                   }}>
