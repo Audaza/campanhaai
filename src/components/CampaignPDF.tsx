@@ -1005,133 +1005,268 @@ export default function CampaignPDF({ plan }: { plan: CampaignPlan }) {
     <Document>
 
       {/* ═════════════════════════════════════════════
-          PÁGINA 1 — CAPA
+          PÁGINA 1 — CAPA (estilo dashboard Audaza Digital)
       ═════════════════════════════════════════════ */}
       <Page size="A4" style={{ fontFamily: "Helvetica", backgroundColor: C.surface, padding: 0 }}>
-        {/* Fundo gradiente full-bleed */}
-        <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
-          <Svg width={PAGE_W} height={842}>
-            <Defs>
-              <LinearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0%" stopColor="#1a2851" stopOpacity={1} />
-                <Stop offset="40%" stopColor={C.brandDark} stopOpacity={1} />
-                <Stop offset="75%" stopColor={C.brand} stopOpacity={1} />
-                <Stop offset="100%" stopColor={C.brandCool} stopOpacity={1} />
-              </LinearGradient>
-            </Defs>
-            <Rect x={0} y={0} width={PAGE_W} height={842} fill="url(#cover)" />
-            {/* Círculos decorativos */}
-            <Rect x={380} y={-140} width={400} height={400} rx={200} fill={C.surface} fillOpacity={0.04} />
-            <Rect x={-80} y={620}  width={320} height={320} rx={160} fill={C.surface} fillOpacity={0.05} />
-            <Rect x={440} y={520}  width={180} height={180} rx={90}  fill={C.surface} fillOpacity={0.06} />
-            <Rect x={60}  y={100}  width={60}  height={60}  rx={30}  fill={C.surface} fillOpacity={0.07} />
-          </Svg>
-        </View>
 
-        {/* Conteúdo da capa */}
-        <View style={{ flex: 1, paddingHorizontal: 48, paddingTop: 60, paddingBottom: 60 }}>
-          {/* Topo: logo + marca */}
+        {/* Faixa azul vertical à esquerda (igual ref dashboard) */}
+        <View style={{
+          position: "absolute", top: 0, left: 0, bottom: 0, width: 6,
+          backgroundColor: C.brand,
+        }} />
+
+        {/* Acentos pastel decorativos no canto superior direito */}
+        <Svg width={PAGE_W} height={842} style={{ position: "absolute", top: 0, left: 0 }}>
+          <Defs>
+            <LinearGradient id="coverFade" x1="1" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#eaf2ff" stopOpacity={0.55} />
+              <Stop offset="100%" stopColor="#eaf2ff" stopOpacity={0} />
+            </LinearGradient>
+          </Defs>
+          <Rect x={PAGE_W - 280} y={-100} width={380} height={380} rx={190} fill="url(#coverFade)" />
+        </Svg>
+
+        {/* ── Header bar (logo + badge período) ── */}
+        <View style={{
+          paddingHorizontal: 48, paddingTop: 38, paddingBottom: 28,
+          flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+        }}>
+          {/* Logo Audaza Digital */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={{
-              width: 32, height: 32, borderRadius: 8, backgroundColor: C.surface,
+              width: 30, height: 30, borderRadius: 8,
+              backgroundColor: C.brand,
               alignItems: "center", justifyContent: "center",
             }}>
-              <Text style={{ fontSize: 17, fontFamily: "Helvetica-Bold", color: C.brand, letterSpacing: -0.5 }}>C</Text>
+              {/* Foguete simplificado em SVG */}
+              <Svg width={15} height={15} viewBox="0 0 24 24">
+                <Path
+                  d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zm5.5-1.5L7 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2zM9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"
+                  fill="none" stroke={C.surface} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+                />
+              </Svg>
             </View>
-            <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.3 }}>
-              Campanha Tráfego · Audaza
+            <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.text, letterSpacing: -0.4 }}>
+              AUDAZA <Text style={{ color: C.muted, fontFamily: "Helvetica" }}>Campanha</Text>
             </Text>
           </View>
 
-          {/* Centro: título grande */}
-          <View style={{ flex: 1, justifyContent: "center" }}>
-            <Text style={{
-              fontSize: T.tiny, fontFamily: "Helvetica-Bold",
-              color: "rgba(255,255,255,0.65)", letterSpacing: 2, marginBottom: 14,
+          {/* Badge do período (igual "META ADS" + "7 dias" da ref) */}
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+              paddingVertical: 6, paddingHorizontal: 11, borderRadius: 7,
             }}>
-              PLANEJAMENTO ESTRATÉGICO DE TRÁFEGO PAGO
-            </Text>
-            <Text style={{
-              fontSize: 38, fontFamily: "Helvetica-Bold", color: C.surface,
-              letterSpacing: -1.2, lineHeight: 1.08, marginBottom: 10,
-            }}>
-              {truncSmart(plan.overview.clientName, 38)}
-            </Text>
-            <Text style={{
-              fontSize: T.h2, color: "rgba(255,255,255,0.85)",
-              letterSpacing: -0.2, lineHeight: 1.4, maxWidth: 460,
-            }}>
-              {truncSmart(plan.overview.product, 80)}
-            </Text>
-
-            {/* Divisor fino */}
-            <View style={{ height: 1, width: 72, backgroundColor: "rgba(255,255,255,0.35)", marginTop: 32, marginBottom: 28 }} />
-
-            {/* Grid de dados da capa */}
-            <View style={{ flexDirection: "row", gap: 28 }}>
-              <View>
-                <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: "rgba(255,255,255,0.6)", letterSpacing: 1.2, marginBottom: 5 }}>
-                  OBJETIVO
-                </Text>
-                <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.2 }}>
-                  {plan.overview.objective}
-                </Text>
-              </View>
-              <View>
-                <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: "rgba(255,255,255,0.6)", letterSpacing: 1.2, marginBottom: 5 }}>
-                  PERÍODO
-                </Text>
-                <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.2 }}>
-                  {plan.overview.duration}
-                </Text>
-              </View>
-              <View>
-                <Text style={{ fontSize: T.micro, fontFamily: "Helvetica-Bold", color: "rgba(255,255,255,0.6)", letterSpacing: 1.2, marginBottom: 5 }}>
-                  {plan.overview.dailyBudget ? "INVEST. DIÁRIO" : "ORÇAMENTO"}
-                </Text>
-                <Text style={{ fontSize: T.h3, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.2 }}>
-                  {plan.overview.dailyBudget || plan.overview.totalBudget}
-                </Text>
-              </View>
+              <PdfIcon kind="objetivo" color={C.brand} size={11} />
+              <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.brand, letterSpacing: 0.6 }}>
+                {(plan.overview.platforms[0] || "PLANEJAMENTO").toUpperCase()}
+              </Text>
             </View>
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 6,
+              backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
+              paddingVertical: 6, paddingHorizontal: 11, borderRadius: 7,
+            }}>
+              <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.text }}>
+                {plan.overview.duration}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-            {/* Plataformas */}
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 24 }}>
-              {plan.overview.platforms.map((p, i) => (
+        {/* ── Hero — eyebrow + nome cliente grande + produto ── */}
+        <View style={{ paddingHorizontal: 48, paddingTop: 12, paddingBottom: 36 }}>
+          <Text style={{
+            fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.brand,
+            letterSpacing: 1.6, marginBottom: 14,
+          }}>
+            PLANEJAMENTO ESTRATÉGICO DE TRÁFEGO PAGO
+          </Text>
+          <Text style={{
+            fontSize: 44, fontFamily: "Helvetica-Bold", color: C.text,
+            letterSpacing: -1.4, lineHeight: 1.05, marginBottom: 12,
+          }}>
+            {truncSmart(plan.overview.clientName, 38)}
+          </Text>
+          <Text style={{
+            fontSize: T.h2, color: C.subtext,
+            letterSpacing: -0.2, lineHeight: 1.4, maxWidth: 460,
+          }}>
+            {truncSmart(plan.overview.product, 90)}
+          </Text>
+        </View>
+
+        {/* ── 4 STAT CARDS PASTEL (igual dashboard ref) ── */}
+        <View style={{ paddingHorizontal: 48, paddingBottom: 18 }}>
+          {(() => {
+            const palette = [
+              { color: "#5b9eff", bg: "#eaf2ff", icon: "investimento" },
+              { color: "#1fb393", bg: "#dcf5ee", icon: "objetivo" },
+              { color: "#c89121", bg: "#fdf2d7", icon: "periodo" },
+              { color: "#9b6ee8", bg: "#efe4ff", icon: "objetivo" },
+            ];
+            const cards: { label: string; value: string; sub: string }[] = [
+              {
+                label: plan.overview.dailyBudget ? "Investimento diário" : "Investimento total",
+                value: plan.overview.dailyBudget || plan.overview.totalBudget,
+                sub: plan.overview.dailyBudget ? `× ${plan.overview.duration}` : plan.overview.duration,
+              },
+              {
+                label: "Campanhas",
+                value: String(plan.campaigns.length),
+                sub: `${plan.overview.platforms.length} ${plan.overview.platforms.length === 1 ? "plataforma" : "plataformas"}`,
+              },
+              {
+                label: adSetStatLabel,
+                value: String(totalAdSets),
+                sub: `por campanha: ${(totalAdSets / Math.max(plan.campaigns.length, 1)).toFixed(0)}`,
+              },
+            ];
+            if (totalAds > 0) {
+              cards.push({
+                label: adStatLabel,
+                value: String(totalAds),
+                sub: `por grupo: ${(totalAds / Math.max(totalAdSets, 1)).toFixed(0)}`,
+              });
+            } else {
+              // Se não há "ads", usa Localização ou Objetivo como 4º card
+              cards.push({
+                label: plan.overview.location ? "Localização" : "Objetivo",
+                value: truncSmart(plan.overview.location || plan.overview.objective, 18),
+                sub: plan.overview.location ? plan.overview.objective : plan.overview.duration,
+              });
+            }
+
+            return (
+              <View style={{ flexDirection: "row", gap: 9 }}>
+                {cards.map((c, i) => {
+                  const p = palette[i % palette.length];
+                  return (
+                    <View key={i} style={{
+                      flex: 1, backgroundColor: C.surface,
+                      borderRadius: 12, borderWidth: 1, borderColor: C.border,
+                      padding: 16, position: "relative", overflow: "hidden", minHeight: 124,
+                    }}>
+                      <View style={{
+                        width: 30, height: 30, borderRadius: 9,
+                        backgroundColor: p.bg,
+                        alignItems: "center", justifyContent: "center",
+                        marginBottom: 14,
+                      }}>
+                        <PdfIcon kind={p.icon} color={p.color} size={14} />
+                      </View>
+                      <Text style={{ fontSize: T.tiny, color: C.muted, marginBottom: 6 }}>
+                        {c.label}
+                      </Text>
+                      <Text style={{
+                        fontSize: T.d2, fontFamily: "Helvetica-Bold", color: C.text,
+                        letterSpacing: -0.5, lineHeight: 1,
+                      }}>
+                        {c.value}
+                      </Text>
+                      <Text style={{ fontSize: T.micro, color: C.muted, marginTop: 6 }}>
+                        {c.sub}
+                      </Text>
+                      {/* Linha colorida no rodapé */}
+                      <View style={{
+                        position: "absolute", left: 14, right: 14, bottom: 8,
+                        height: 2, backgroundColor: p.color, opacity: 0.55, borderRadius: 1,
+                      }} />
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })()}
+        </View>
+
+        {/* ── Resumo estratégico ── */}
+        <View style={{ paddingHorizontal: 48, paddingBottom: 30 }}>
+          <View style={{
+            backgroundColor: C.surface, borderRadius: 11,
+            borderWidth: 1, borderColor: C.border,
+            paddingHorizontal: 16, paddingVertical: 14,
+          }}>
+            <Text style={{
+              fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.brand,
+              letterSpacing: 1.4, marginBottom: 6,
+            }}>
+              RESUMO ESTRATÉGICO
+            </Text>
+            <Text style={{ fontSize: T.small, color: C.subtext, lineHeight: 1.65 }}>
+              {plan.overview.summary}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── Plataformas (chips coloridos) ── */}
+        <View style={{ paddingHorizontal: 48, paddingBottom: 30 }}>
+          <Text style={{
+            fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
+            letterSpacing: 1.2, marginBottom: 8,
+          }}>
+            PLATAFORMAS DE MÍDIA
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {plan.overview.platforms.map((p, i) => {
+              const cc = platColor(p);
+              return (
                 <View key={i} style={{
-                  backgroundColor: "rgba(255,255,255,0.16)",
-                  borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
-                  borderRadius: 16, paddingVertical: 5, paddingHorizontal: 11,
+                  flexDirection: "row", alignItems: "center", gap: 6,
+                  backgroundColor: platSoft(cc), borderRadius: 7,
+                  borderWidth: 1, borderColor: cc + "26",
+                  paddingVertical: 5, paddingHorizontal: 10,
                 }}>
-                  <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: 0.2 }}>
+                  <View style={{
+                    width: 14, height: 14, borderRadius: 4, backgroundColor: cc,
+                    alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color: C.surface }}>
+                      {platGlyph(p)}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: T.tiny, fontFamily: "Helvetica-Bold", color: cc }}>
                     {p}
                   </Text>
                 </View>
-              ))}
-            </View>
+              );
+            })}
           </View>
+        </View>
 
-          {/* Rodapé da capa */}
-          <View style={{
-            flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end",
-            paddingTop: 20, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.2)",
-          }}>
-            <View>
-              <Text style={{ fontSize: T.micro, color: "rgba(255,255,255,0.6)", letterSpacing: 1.1, marginBottom: 3 }}>
-                EMITIDO EM
-              </Text>
-              <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.1 }}>
-                {today}
-              </Text>
-            </View>
-            <View style={{ alignItems: "flex-end" }}>
-              <Text style={{ fontSize: T.micro, color: "rgba(255,255,255,0.6)", letterSpacing: 1.1, marginBottom: 3 }}>
-                DOCUMENTO
-              </Text>
-              <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.surface, letterSpacing: -0.1 }}>
-                Planejamento de Campanha
-              </Text>
-            </View>
+        {/* ── Spacer flexível pra empurrar footer pra baixo ── */}
+        <View style={{ flex: 1 }} />
+
+        {/* ── Footer da capa ── */}
+        <View style={{
+          paddingHorizontal: 48, paddingTop: 18, paddingBottom: 38,
+          borderTopWidth: 1, borderTopColor: C.border,
+          flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end",
+        }}>
+          <View>
+            <Text style={{ fontSize: T.micro, color: C.muted, letterSpacing: 1.2, marginBottom: 4 }}>
+              EMITIDO EM
+            </Text>
+            <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text, letterSpacing: -0.1 }}>
+              {today}
+            </Text>
+          </View>
+          <View style={{ alignItems: "center" }}>
+            <Text style={{ fontSize: T.micro, color: C.muted, letterSpacing: 1.2, marginBottom: 4 }}>
+              CLIENTE
+            </Text>
+            <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.text, letterSpacing: -0.1 }}>
+              {truncSmart(plan.overview.clientName, 30)}
+            </Text>
+          </View>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontSize: T.micro, color: C.muted, letterSpacing: 1.2, marginBottom: 4 }}>
+              DOCUMENTO
+            </Text>
+            <Text style={{ fontSize: T.small, fontFamily: "Helvetica-Bold", color: C.brand, letterSpacing: -0.1 }}>
+              Planejamento de Campanha
+            </Text>
           </View>
         </View>
       </Page>
