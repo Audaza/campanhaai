@@ -151,27 +151,54 @@ function Chip({ label, color = C.muted, bg = C.borderMid, icon }: {
   );
 }
 
-/** Bloco de público-alvo com chips */
+/** Bloco de público-alvo / palavras-chave em cápsulas individuais.
+ *  Quebra inteligentemente por: " · " (demográfico), vírgula ou nova
+ *  linha (palavras-chave Google), ou fica num chip único se for texto livre. */
 function AudienceBlock({ audience, color, label }: { audience: string; color: string; label?: string }) {
-  const parts = audience.includes(" · ") ? audience.split(" · ").filter(Boolean) : [audience];
+  const splitParts = (raw: string): string[] => {
+    if (!raw) return [];
+    if (raw.includes(" · ")) return raw.split(" · ").map(s => s.trim()).filter(Boolean);
+    if (/[,\n]/.test(raw))   return raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    return [raw.trim()];
+  };
+  const parts = splitParts(audience);
+  if (!parts.length) return null;
+
   return (
     <div style={{
-      padding: "10px 14px", borderLeft: `3px solid ${color}`,
+      padding: "12px 14px", borderLeft: `3px solid ${color}`,
       background: `${color}09`, borderRadius: "0 10px 10px 0",
     }}>
-      <p style={{
-        fontSize: 9.5, fontWeight: 800, letterSpacing: "0.1em",
-        textTransform: "uppercase", color, margin: "0 0 6px",
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
       }}>
-        {label ?? "Público-alvo"}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+        <p style={{
+          fontSize: 9.5, fontWeight: 800, letterSpacing: "0.12em",
+          textTransform: "uppercase", color, margin: 0,
+        }}>
+          {label ?? "Público-alvo"}
+        </p>
+        <span style={{
+          fontSize: 10, fontWeight: 600, color: C.muted,
+          fontVariantNumeric: "tabular-nums",
+        }}>
+          {parts.length} {parts.length === 1 ? "termo" : "termos"}
+        </span>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {parts.map((part, i) => (
           <span key={i} style={{
-            fontSize: 12, color: C.text, background: C.surface,
-            border: `1px solid ${color}26`, borderRadius: 999,
-            padding: "3px 10px", fontWeight: 500,
+            display: "inline-flex", alignItems: "center", gap: 5,
+            fontSize: 12, fontWeight: 500, color: C.text,
+            background: C.surface,
+            border: `1px solid ${color}30`, borderRadius: 999,
+            padding: "4px 11px",
+            lineHeight: 1.3,
           }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: "50%",
+              background: color, opacity: 0.7,
+            }} />
             {part}
           </span>
         ))}
