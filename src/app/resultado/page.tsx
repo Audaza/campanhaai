@@ -1443,9 +1443,9 @@ export default function ResultadoPage() {
                 const gcolor = "#EA4335";
                 const rcolor = "#dc2626"; // tom mais frio pra negativas
                 /* Campos que viram chips (lista de termos separados por vírgula/linha) */
-                const chipRows: { label: string; value?: string; color: string; negative?: boolean }[] = [
-                  { label: "Palavras-chave",     value: g.keywords,           color: gcolor },
-                  { label: "Kw negativas",       value: g.negativeKeywords,   color: rcolor, negative: true },
+                const chipRows: { label: string; value?: string; color: string; sign?: "+" | "−" }[] = [
+                  { label: "Palavras-chave",     value: g.keywords,           color: gcolor, sign: "+" },
+                  { label: "Kw negativas",       value: g.negativeKeywords,   color: rcolor, sign: "−" },
                   { label: "Sinais de público",  value: g.audienceSignals,    color: gcolor },
                   { label: "Categorias",         value: g.shoppingCategories, color: gcolor },
                 ].filter(r => !!r.value);
@@ -1553,11 +1553,11 @@ export default function ResultadoPage() {
                                     border: `1px solid ${row.color}30`, borderRadius: 999,
                                     padding: "4px 11px", lineHeight: 1.3,
                                   }}>
-                                    {row.negative && (
+                                    {row.sign && (
                                       <span style={{
                                         fontSize: 13, fontWeight: 700, color: row.color,
                                         marginRight: 5, lineHeight: 1,
-                                      }}>−</span>
+                                      }}>{row.sign}</span>
                                     )}
                                     {t}
                                   </span>
