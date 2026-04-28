@@ -410,72 +410,147 @@ function RSAStructuredPDF({ copy, color }: { copy: string; color: string }) {
     );
   }
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: 0 }}>
+      {/* ─── TÍTULOS ─── */}
       {titles.length > 0 && (
         <View>
-          <Text style={{
-            fontSize: T.micro, fontFamily: "Helvetica-Bold",
-            color: color, letterSpacing: 0.9, marginBottom: 4,
+          {/* Header da seção */}
+          <View style={{
+            flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6,
           }}>
-            TÍTULOS · {titles.length}
-          </Text>
+            <View style={{
+              width: 14, height: 14, borderRadius: 4,
+              backgroundColor: color + "1f",
+              alignItems: "center", justifyContent: "center",
+            }}>
+              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color }}>T</Text>
+            </View>
+            <Text style={{
+              fontSize: T.micro, fontFamily: "Helvetica-Bold", color,
+              letterSpacing: 1.1,
+            }}>
+              TÍTULOS
+            </Text>
+            <Text style={{
+              fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
+              letterSpacing: 0.4,
+            }}>
+              {titles.length}/15
+            </Text>
+          </View>
           <View style={{ gap: 3 }}>
-            {titles.map((t, i) => (
-              <View key={i} style={{ flexDirection: "row", gap: 6, alignItems: "flex-start" }}>
-                <View style={{
-                  width: 14, height: 14, borderRadius: 4,
-                  backgroundColor: color + "14",
-                  alignItems: "center", justifyContent: "center", flexShrink: 0,
+            {titles.map((t, i) => {
+              const over = t.length > 30;
+              return (
+                <View key={i} style={{
+                  flexDirection: "row", alignItems: "center", gap: 7,
+                  paddingHorizontal: 8, paddingVertical: 5,
+                  backgroundColor: C.surface,
+                  borderWidth: 1, borderColor: over ? "#dc262640" : C.border,
+                  borderRadius: 5,
                 }}>
-                  <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color }}>
-                    {i + 1}
+                  <View style={{
+                    width: 14, height: 14, borderRadius: 3,
+                    backgroundColor: C.bg,
+                    alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  }}>
+                    <Text style={{ fontSize: 7, fontFamily: "Helvetica-Bold", color: C.muted }}>
+                      {i + 1}
+                    </Text>
+                  </View>
+                  <Text style={{
+                    fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.4,
+                  }}>
+                    {trunc(t, 60)}
+                  </Text>
+                  <Text style={{
+                    fontSize: 7.5, fontFamily: "Helvetica-Bold",
+                    color: over ? "#dc2626" : t.length > 25 ? "#d97706" : C.muted,
+                  }}>
+                    {t.length}/30
                   </Text>
                 </View>
-                <Text style={{
-                  fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.45,
-                  paddingTop: 1.5,
-                }}>
-                  {trunc(t, 60)}
-                </Text>
-                <Text style={{
-                  fontSize: 7.5, color: t.length > 30 ? "#dc2626" : C.muted,
-                  paddingTop: 2.5,
-                }}>
-                  {t.length}/30
-                </Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       )}
+
+      {/* ─── DIVISOR ENTRE TÍTULOS E DESCRIÇÕES ─── */}
+      {titles.length > 0 && descriptions.length > 0 && (
+        <View style={{
+          flexDirection: "row", alignItems: "center", gap: 8,
+          marginVertical: 12,
+        }}>
+          <View style={{ flex: 1, height: 0.5, backgroundColor: C.borderMid }} />
+          <Text style={{
+            fontSize: 6.5, fontFamily: "Helvetica-Bold", color: C.muted,
+            letterSpacing: 1.4,
+            paddingHorizontal: 7, paddingVertical: 2,
+            backgroundColor: C.surface,
+            borderWidth: 0.5, borderColor: C.border, borderRadius: 99,
+          }}>
+            DESCRIÇÕES
+          </Text>
+          <View style={{ flex: 1, height: 0.5, backgroundColor: C.borderMid }} />
+        </View>
+      )}
+
+      {/* ─── DESCRIÇÕES ─── */}
       {descriptions.length > 0 && (
         <View>
-          <Text style={{
-            fontSize: T.micro, fontFamily: "Helvetica-Bold",
-            color: color, letterSpacing: 0.9, marginBottom: 4,
-          }}>
-            DESCRIÇÕES · {descriptions.length}
-          </Text>
-          <View style={{ gap: 4 }}>
-            {descriptions.map((d, i) => (
-              <View key={i} style={{
-                paddingHorizontal: 8, paddingVertical: 5,
-                backgroundColor: C.bg, borderRadius: 4,
-                borderLeftWidth: 2, borderLeftColor: color,
+          {/* Header da seção (só aparece quando NÃO houve divisor — ou seja, quando não tem títulos) */}
+          {titles.length === 0 && (
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6,
+            }}>
+              <View style={{
+                width: 14, height: 14, borderRadius: 4,
+                backgroundColor: color + "1f",
+                alignItems: "center", justifyContent: "center",
               }}>
+                <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color }}>D</Text>
+              </View>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold", color,
+                letterSpacing: 1.1,
+              }}>
+                DESCRIÇÕES
+              </Text>
+              <Text style={{
+                fontSize: T.micro, fontFamily: "Helvetica-Bold", color: C.muted,
+                letterSpacing: 0.4,
+              }}>
+                {descriptions.length}/4
+              </Text>
+            </View>
+          )}
+          <View style={{ gap: 4 }}>
+            {descriptions.map((d, i) => {
+              const over = d.length > 90;
+              return (
+                <View key={i} style={{
+                  paddingHorizontal: 9, paddingVertical: 6,
+                  backgroundColor: C.surface,
+                  borderWidth: 1, borderColor: over ? "#dc262640" : C.border,
+                  borderLeftWidth: 2.5, borderLeftColor: color,
+                  borderRadius: 5,
+                }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
-                  <Text style={{ fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.5 }}>
+                  <Text style={{ fontSize: T.tiny, color: C.text, flex: 1, lineHeight: 1.45 }}>
                     {d}
                   </Text>
                   <Text style={{
-                    fontSize: 7.5, color: d.length > 90 ? "#dc2626" : C.muted,
+                    fontSize: 7.5, fontFamily: "Helvetica-Bold",
+                    color: over ? "#dc2626" : d.length > 80 ? "#d97706" : C.muted,
                     flexShrink: 0,
                   }}>
                     {d.length}/90
                   </Text>
                 </View>
               </View>
-            ))}
+            );
+            })}
           </View>
         </View>
       )}

@@ -183,6 +183,175 @@ function AudienceBlock({ audience, color, label }: { audience: string; color: st
 }
 
 /* ═══════════════════════════════════════════════════════
+   RSA estruturado — títulos + descrições organizados
+═══════════════════════════════════════════════════════ */
+function RSAStructured({ copy, color }: { copy: string; color: string }) {
+  const { titles, descriptions } = parseRSA(copy);
+  if (!titles.length && !descriptions.length) {
+    return (
+      <p style={{ fontSize: 13, color: C.subtext, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>
+        {copy}
+      </p>
+    );
+  }
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* ─── Títulos ─── */}
+      {titles.length > 0 && (
+        <div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+          }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 5,
+              background: `${color}1f`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color }}>T</span>
+            </div>
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, color,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+            }}>
+              Títulos
+            </span>
+            <span style={{
+              fontSize: 10.5, fontWeight: 600, color: C.muted,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {titles.length}/15
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {titles.map((t, i) => {
+              const over = t.length > 30;
+              return (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 9,
+                  padding: "7px 10px",
+                  background: C.surface,
+                  border: `1px solid ${over ? "#dc262640" : C.border}`,
+                  borderRadius: 7,
+                }}>
+                  <span style={{
+                    width: 18, height: 18, borderRadius: 4,
+                    background: C.surface2,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9.5, fontWeight: 700, color: C.muted,
+                    flexShrink: 0, fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {i + 1}
+                  </span>
+                  <span style={{
+                    flex: 1, fontSize: 13, color: C.text, lineHeight: 1.4,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {t}
+                  </span>
+                  <span style={{
+                    fontSize: 10.5, fontWeight: 600,
+                    color: over ? "#dc2626" : t.length > 25 ? "#d97706" : C.muted,
+                    fontVariantNumeric: "tabular-nums", flexShrink: 0,
+                  }}>
+                    {t.length}/30
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Divisor visual entre Títulos e Descrições ─── */}
+      {titles.length > 0 && descriptions.length > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          margin: "16px 0 14px",
+        }}>
+          <div style={{
+            flex: 1, height: 1,
+            background: `linear-gradient(90deg, transparent, ${C.borderMid}, transparent)`,
+          }} />
+          <span style={{
+            fontSize: 9.5, fontWeight: 700, color: C.muted,
+            letterSpacing: "0.16em", textTransform: "uppercase",
+            padding: "3px 9px",
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 99,
+          }}>
+            ↓ Descrições ↓
+          </span>
+          <div style={{
+            flex: 1, height: 1,
+            background: `linear-gradient(90deg, transparent, ${C.borderMid}, transparent)`,
+          }} />
+        </div>
+      )}
+
+      {/* ─── Descrições ─── */}
+      {descriptions.length > 0 && (
+        <div>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+          }}>
+            <div style={{
+              width: 18, height: 18, borderRadius: 5,
+              background: `${color}1f`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color }}>D</span>
+            </div>
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, color,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+            }}>
+              Descrições
+            </span>
+            <span style={{
+              fontSize: 10.5, fontWeight: 600, color: C.muted,
+              fontVariantNumeric: "tabular-nums",
+            }}>
+              {descriptions.length}/4
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {descriptions.map((d, i) => {
+              const over = d.length > 90;
+              return (
+                <div key={i} style={{
+                  padding: "9px 12px",
+                  background: C.surface,
+                  border: `1px solid ${over ? "#dc262640" : C.border}`,
+                  borderLeft: `3px solid ${color}`,
+                  borderRadius: 7,
+                  position: "relative",
+                }}>
+                  <p style={{
+                    fontSize: 13, color: C.text, lineHeight: 1.55,
+                    margin: 0, paddingRight: 50,
+                  }}>
+                    {d}
+                  </p>
+                  <span style={{
+                    position: "absolute", top: 9, right: 12,
+                    fontSize: 10.5, fontWeight: 600,
+                    color: over ? "#dc2626" : d.length > 80 ? "#d97706" : C.muted,
+                    fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {d.length}/90
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
    PRÉ-VISUALIZAÇÕES — mockups de como o anúncio vai aparecer
 ═══════════════════════════════════════════════════════ */
 
@@ -1226,46 +1395,50 @@ export default function ResultadoPage() {
                                   {ad.copy && <CopyBtn text={cleanCopy(ad.copy)} />}
                                 </div>
 
-                                {/* Imagem + copy */}
-                                {((ad.fileDataUrl && ad.fileType === "image") || ad.copy) && (
-                                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-                                    {ad.fileDataUrl && ad.fileType === "image" && (
-                                      <div style={{
-                                        flex: "0 1 50%", minWidth: 140,
-                                        maxWidth: ad.copy ? "50%" : "100%",
-                                      }}>
-                                        <img
-                                          src={ad.fileDataUrl}
-                                          alt={ad.fileName ?? ad.name}
-                                          style={{
-                                            width: "100%", height: "auto",
-                                            borderRadius: 8, display: "block",
-                                            border: `1px solid ${C.border}`,
-                                          }}
-                                        />
-                                      </div>
-                                    )}
-                                    {ad.copy && (
-                                      <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 8 }}>
-                                        <p style={{
-                                          fontSize: 13, color: C.subtext,
-                                          lineHeight: 1.72, margin: 0, whiteSpace: "pre-wrap",
+                                {/* Imagem + copy (RSA estruturado quando for Responsivo de Pesquisa) */}
+                                {ad.format === "Responsivo de Pesquisa" && ad.copy ? (
+                                  <RSAStructured copy={ad.copy} color={c.color} />
+                                ) : (
+                                  ((ad.fileDataUrl && ad.fileType === "image") || ad.copy) && (
+                                    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+                                      {ad.fileDataUrl && ad.fileType === "image" && (
+                                        <div style={{
+                                          flex: "0 1 50%", minWidth: 140,
+                                          maxWidth: ad.copy ? "50%" : "100%",
                                         }}>
-                                          {cleanCopy(ad.copy)}
-                                        </p>
-                                        {extractPostDate(ad.copy) && (
-                                          <span style={{
-                                            alignSelf: "flex-start",
-                                            fontSize: 11, fontWeight: 500, color: C.muted,
-                                            background: C.bg, border: `1px solid ${C.border}`,
-                                            padding: "3px 10px", borderRadius: 999,
+                                          <img
+                                            src={ad.fileDataUrl}
+                                            alt={ad.fileName ?? ad.name}
+                                            style={{
+                                              width: "100%", height: "auto",
+                                              borderRadius: 8, display: "block",
+                                              border: `1px solid ${C.border}`,
+                                            }}
+                                          />
+                                        </div>
+                                      )}
+                                      {ad.copy && (
+                                        <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                          <p style={{
+                                            fontSize: 13, color: C.subtext,
+                                            lineHeight: 1.72, margin: 0, whiteSpace: "pre-wrap",
                                           }}>
-                                            📅 Publicado em {extractPostDate(ad.copy)}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                            {cleanCopy(ad.copy)}
+                                          </p>
+                                          {extractPostDate(ad.copy) && (
+                                            <span style={{
+                                              alignSelf: "flex-start",
+                                              fontSize: 11, fontWeight: 500, color: C.muted,
+                                              background: C.bg, border: `1px solid ${C.border}`,
+                                              padding: "3px 10px", borderRadius: 999,
+                                            }}>
+                                              📅 Publicado em {extractPostDate(ad.copy)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
                                 )}
 
                                 {ad.fileName && ad.fileType === "video" && (
