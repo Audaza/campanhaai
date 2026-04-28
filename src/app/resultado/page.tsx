@@ -1444,8 +1444,8 @@ export default function ResultadoPage() {
                 const rcolor = "#dc2626"; // tom mais frio pra negativas
                 /* Campos que viram chips (lista de termos separados por vírgula/linha) */
                 const chipRows: { label: string; value?: string; color: string; sign?: "+" | "−" }[] = [
-                  { label: "Palavras-chave",     value: g.keywords,           color: gcolor, sign: "+" },
-                  { label: "Kw negativas",       value: g.negativeKeywords,   color: rcolor, sign: "−" },
+                  { label: "Palavras-chave",     value: g.keywords,           color: gcolor, sign: "+" as const },
+                  { label: "Kw negativas",       value: g.negativeKeywords,   color: rcolor, sign: "−" as const },
                   { label: "Sinais de público",  value: g.audienceSignals,    color: gcolor },
                   { label: "Categorias",         value: g.shoppingCategories, color: gcolor },
                 ].filter(r => !!r.value);
