@@ -693,7 +693,10 @@ export default function ResultadoPage() {
       const bg = getComputedStyle(document.documentElement)
         .getPropertyValue("--bg").trim() || "#ffffff";
 
-      /* SEMPRE captura na largura forçada (não maior — evita overflow capture) */
+      /* SEMPRE captura na largura forçada (não maior — evita overflow capture).
+         IMPORTANTE: NÃO passar canvasWidth/Height — o pixelRatio já cuida disso.
+         Quando você passa width=1024 + canvasWidth=2048, o conteúdo renderiza
+         em 1024 mas a canvas é 2048 → sobra 1024px de espaço em branco lateral. */
       const fullW = CAPTURE_WIDTH;
       const fullH = el.scrollHeight;
 
@@ -703,9 +706,11 @@ export default function ResultadoPage() {
         backgroundColor: bg,
         width:  fullW,
         height: fullH,
-        canvasWidth:  fullW * 2,
-        canvasHeight: fullH * 2,
-        style: { transform: "none" },
+        style: {
+          transform: "none",
+          margin:    "0",  // remove margin: 0 auto que poderia centrar
+          left:      "0",
+        },
       });
     } finally {
       /* Restaura estilos */
