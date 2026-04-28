@@ -743,11 +743,15 @@ export default function ResultadoPage() {
       const canvas = await captureCanvas();
       if (!canvas) return;
       const { jsPDF } = await import("jspdf");
-      const imgData = canvas.toDataURL("image/png");
+
+      /* JPEG (qualidade alta) em vez de PNG — mais robusto pra
+         imagens grandes; PNG pode corromper no jsPDF e gerar
+         "rainbow noise" em alguns viewers */
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
       /* Conversão px → pt (96dpi → 72dpi, ratio 0.75) */
-      const cssW_px = canvas.width  / 2; // dimensões CSS (sem pixelRatio)
-      const cssH_px = canvas.height / 2;
+      const cssW_px  = canvas.width  / 2; // dimensões CSS (sem pixelRatio)
+      const cssH_px  = canvas.height / 2;
       const pageW_pt = cssW_px * 0.75;
       const pageH_pt = cssH_px * 0.75;
 
@@ -755,9 +759,9 @@ export default function ResultadoPage() {
         orientation: pageH_pt > pageW_pt ? "p" : "l",
         unit: "pt",
         format: [pageW_pt, pageH_pt],
-        compress: true,
+        compress: false, // descompactado evita corrupção em imagens grandes
       });
-      pdf.addImage(imgData, "PNG", 0, 0, pageW_pt, pageH_pt);
+      pdf.addImage(imgData, "JPEG", 0, 0, pageW_pt, pageH_pt, undefined, "FAST");
       pdf.save(`campanha-${fileSlug()}.pdf`);
     } catch (err) {
       console.error(err);
