@@ -188,17 +188,13 @@ function AudienceBlock({ audience, color, label }: { audience: string; color: st
       <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
         {parts.map((part, i) => (
           <span key={i} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
+            display: "inline-flex", alignItems: "center",
             fontSize: 12, fontWeight: 500, color: C.text,
             background: C.surface,
             border: `1px solid ${color}30`, borderRadius: 999,
             padding: "4px 11px",
             lineHeight: 1.3,
           }}>
-            <span style={{
-              width: 5, height: 5, borderRadius: "50%",
-              background: color, opacity: 0.7,
-            }} />
             {part}
           </span>
         ))}
@@ -1414,17 +1410,26 @@ export default function ResultadoPage() {
               {plan.googleAdsConfig && (() => {
                 const g = plan.googleAdsConfig!;
                 const gcolor = "#EA4335";
-                const rows: { label: string; value?: string }[] = [
+                const rcolor = "#dc2626"; // tom mais frio pra negativas
+                /* Campos que viram chips (lista de termos separados por vírgula/linha) */
+                const chipRows: { label: string; value?: string; color: string; negative?: boolean }[] = [
+                  { label: "Palavras-chave",     value: g.keywords,           color: gcolor },
+                  { label: "Kw negativas",       value: g.negativeKeywords,   color: rcolor, negative: true },
+                  { label: "Sinais de público",  value: g.audienceSignals,    color: gcolor },
+                  { label: "Categorias",         value: g.shoppingCategories, color: gcolor },
+                ].filter(r => !!r.value);
+                /* Campos simples (texto/URL única) */
+                const textRows: { label: string; value?: string }[] = [
                   { label: "Idioma",              value: g.language },
-                  { label: "Palavras-chave",      value: g.keywords },
-                  { label: "Kw negativas",        value: g.negativeKeywords },
                   { label: "URL destino",         value: g.finalUrl },
-                  { label: "Sinais de público",   value: g.audienceSignals },
-                  { label: "Categorias",          value: g.shoppingCategories },
                   { label: "Vídeo YouTube",       value: g.youtubeVideoUrl },
                   { label: "Formato vídeo",       value: g.videoFormat },
                   { label: "Formato Demand Gen",  value: g.demandGenFormat },
                 ].filter(r => !!r.value);
+
+                const splitTerms = (raw: string): string[] =>
+                  raw.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+
                 return (
                   <div className="card" style={{ overflow: "hidden", borderLeft: `3px solid ${gcolor}` }}>
                     <div style={{
@@ -1449,32 +1454,89 @@ export default function ResultadoPage() {
                         }}>
                           Configuração Google Ads
                         </div>
-                        <div style={{
-                          fontSize: 15, fontWeight: 700, color: C.text,
-                          marginTop: 3, letterSpacing: "-0.018em",
+                        <div className="font-display" style={{
+                          fontSize: 16, fontWeight: 500, color: C.text,
+                          marginTop: 3, letterSpacing: "-0.025em",
                         }}>
                           {g.campaignType}
                         </div>
                       </div>
                     </div>
-                    <div style={{ padding: "16px 22px", display: "flex", flexDirection: "column", gap: 11 }}>
-                      {rows.map((row, i) => (
-                        <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                          <span style={{
-                            fontSize: 10, fontWeight: 800, color: C.muted,
-                            letterSpacing: "0.09em", width: 140, flexShrink: 0,
-                            textTransform: "uppercase", paddingTop: 3,
-                          }}>
-                            {row.label}
-                          </span>
-                          <span style={{
-                            fontSize: 13, color: C.text, flex: 1, lineHeight: 1.6, wordBreak: "break-word",
-                          }}>
-                            {row.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+
+                    {/* Campos simples (texto/URL) */}
+                    {textRows.length > 0 && (
+                      <div style={{ padding: "14px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
+                        {textRows.map((row, i) => (
+                          <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, color: C.muted,
+                              letterSpacing: "0.12em", width: 140, flexShrink: 0,
+                              textTransform: "uppercase", paddingTop: 3,
+                            }}>
+                              {row.label}
+                            </span>
+                            <span style={{
+                              fontSize: 13, color: C.text, flex: 1, lineHeight: 1.55,
+                              wordBreak: "break-word",
+                            }}>
+                              {row.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Campos de chips (palavras-chave, sinais, categorias) */}
+                    {chipRows.length > 0 && (
+                      <div style={{
+                        padding: "14px 22px",
+                        display: "flex", flexDirection: "column", gap: 14,
+                        borderTop: textRows.length > 0 ? `1px solid ${C.border}` : "none",
+                      }}>
+                        {chipRows.map((row, i) => {
+                          const terms = splitTerms(row.value!);
+                          return (
+                            <div key={i}>
+                              <div style={{
+                                display: "flex", alignItems: "center", gap: 8, marginBottom: 7,
+                              }}>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, color: row.color,
+                                  letterSpacing: "0.12em", textTransform: "uppercase",
+                                }}>
+                                  {row.label}
+                                </span>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 600, color: C.muted,
+                                  fontVariantNumeric: "tabular-nums",
+                                }}>
+                                  {terms.length} {terms.length === 1 ? "termo" : "termos"}
+                                </span>
+                              </div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                                {terms.map((t, ti) => (
+                                  <span key={ti} style={{
+                                    display: "inline-flex", alignItems: "center",
+                                    fontSize: 12, fontWeight: 500, color: C.text,
+                                    background: C.surface,
+                                    border: `1px solid ${row.color}30`, borderRadius: 999,
+                                    padding: "4px 11px", lineHeight: 1.3,
+                                  }}>
+                                    {row.negative && (
+                                      <span style={{
+                                        fontSize: 13, fontWeight: 700, color: row.color,
+                                        marginRight: 5, lineHeight: 1,
+                                      }}>−</span>
+                                    )}
+                                    {t}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
