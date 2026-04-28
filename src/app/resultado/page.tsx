@@ -664,31 +664,37 @@ export default function ResultadoPage() {
 
     /* Salva estilos originais */
     const original = {
-      width: el.style.width,
+      width:    el.style.width,
       minWidth: el.style.minWidth,
       maxWidth: el.style.maxWidth,
+      overflow: el.style.overflow,
+      overflowX: el.style.overflowX,
     };
 
-    /* Força largura desktop estável durante o capture */
+    /* Força largura desktop estável durante o capture +
+       overflow-x hidden pra evitar que URLs gigantes estourem */
     const CAPTURE_WIDTH = 1024;
-    el.style.width    = `${CAPTURE_WIDTH}px`;
-    el.style.minWidth = `${CAPTURE_WIDTH}px`;
-    el.style.maxWidth = `${CAPTURE_WIDTH}px`;
+    el.style.width     = `${CAPTURE_WIDTH}px`;
+    el.style.minWidth  = `${CAPTURE_WIDTH}px`;
+    el.style.maxWidth  = `${CAPTURE_WIDTH}px`;
+    el.style.overflow  = "hidden";
+    el.style.overflowX = "hidden";
+    /* CSS hint: força quebra em palavras longas dentro do export root */
+    el.classList.add("export-capturing");
 
     try {
-      /* Aguarda fontes carregarem + frame de layout */
+      /* Aguarda fontes carregarem + frame de layout estabilizar */
       if (typeof document !== "undefined" && "fonts" in document) {
         await document.fonts.ready;
       }
-      await new Promise(r => setTimeout(r, 80));
+      await new Promise(r => setTimeout(r, 120));
 
       const { toCanvas } = await import("html-to-image");
       const bg = getComputedStyle(document.documentElement)
         .getPropertyValue("--bg").trim() || "#ffffff";
 
-      /* Usa scrollHeight pra pegar o conteúdo completo, scrollWidth pra
-         garantir que nada seja cortado horizontalmente */
-      const fullW = Math.max(el.scrollWidth, CAPTURE_WIDTH);
+      /* SEMPRE captura na largura forçada (não maior — evita overflow capture) */
+      const fullW = CAPTURE_WIDTH;
       const fullH = el.scrollHeight;
 
       return toCanvas(el, {
@@ -703,9 +709,12 @@ export default function ResultadoPage() {
       });
     } finally {
       /* Restaura estilos */
-      el.style.width    = original.width;
-      el.style.minWidth = original.minWidth;
-      el.style.maxWidth = original.maxWidth;
+      el.style.width     = original.width;
+      el.style.minWidth  = original.minWidth;
+      el.style.maxWidth  = original.maxWidth;
+      el.style.overflow  = original.overflow;
+      el.style.overflowX = original.overflowX;
+      el.classList.remove("export-capturing");
     }
   }
 
@@ -736,19 +745,19 @@ export default function ResultadoPage() {
       const { jsPDF } = await import("jspdf");
       const imgData = canvas.toDataURL("image/png");
 
-      /* Página do PDF = dimensões reais do canvas (em pixels CSS).
-         Dividimos por pixelRatio (2) pra voltar pra escala 1x. */
-      const pageW = canvas.width  / 2;
-      const pageH = canvas.height / 2;
+      /* Conversão px → pt (96dpi → 72dpi, ratio 0.75) */
+      const cssW_px = canvas.width  / 2; // dimensões CSS (sem pixelRatio)
+      const cssH_px = canvas.height / 2;
+      const pageW_pt = cssW_px * 0.75;
+      const pageH_pt = cssH_px * 0.75;
 
       const pdf = new jsPDF({
-        orientation: pageH > pageW ? "p" : "l",
-        unit: "px",
-        format: [pageW, pageH],
+        orientation: pageH_pt > pageW_pt ? "p" : "l",
+        unit: "pt",
+        format: [pageW_pt, pageH_pt],
         compress: true,
-        hotfixes: ["px_scaling"],
       });
-      pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+      pdf.addImage(imgData, "PNG", 0, 0, pageW_pt, pageH_pt);
       pdf.save(`campanha-${fileSlug()}.pdf`);
     } catch (err) {
       console.error(err);
@@ -1050,6 +1059,19 @@ export default function ResultadoPage() {
           .hero-budget { text-align: left !important; }
           .stat-cell { padding: 14px 10px; }
           .dash-table__head, .dash-table__row { font-size: 11px; padding: 10px 14px; gap: 8px; }
+        }
+
+        /* Durante o capture (export PNG/PDF), força quebra de URLs/strings
+           gigantes pra que tudo caiba na largura fixa de 1024 sem cortar */
+        .export-capturing h1,
+        .export-capturing h2,
+        .export-capturing h3,
+        .export-capturing h4,
+        .export-capturing p,
+        .export-capturing span,
+        .export-capturing div {
+          word-break: break-word !important;
+          overflow-wrap: anywhere !important;
         }
 
         /* Export menu */
