@@ -11,6 +11,7 @@ import { savePlan } from "@/lib/savedPlans";
 import { getHierarchyLabels } from "@/lib/hierarchy";
 import BrandHeader from "@/components/BrandHeader";
 import ThemeToggle from "@/components/ThemeToggle";
+import { parseRSA, extractDomain } from "@/lib/rsaFormat";
 
 /* ═══════════════════════════════════════════════════════
    DESIGN TOKENS — referenciam variáveis CSS para adaptar
@@ -176,6 +177,242 @@ function AudienceBlock({ audience, color, label }: { audience: string; color: st
             {part}
           </span>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   PRÉ-VISUALIZAÇÕES — mockups de como o anúncio vai aparecer
+═══════════════════════════════════════════════════════ */
+
+/** Resultado patrocinado na pesquisa do Google */
+function SearchAdPreview({
+  copy, finalUrl, clientName,
+}: { copy: string; finalUrl?: string; clientName: string }) {
+  const { titles, descriptions } = parseRSA(copy);
+  if (!titles.length && !descriptions.length) return null;
+
+  const top3 = titles.slice(0, 3);
+  const headline = top3.length > 0 ? top3.join(" | ") : clientName;
+  const desc = descriptions.slice(0, 2).join(" ").trim() || "Saiba mais sobre nossos serviços.";
+  const host = extractDomain(finalUrl) || "seusite.com.br";
+  const initial = (clientName || "S")[0].toUpperCase();
+
+  return (
+    <div className="card" style={{
+      padding: 22, marginBottom: 12,
+    }}>
+      {/* Browser bar */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        paddingBottom: 12, marginBottom: 16,
+        borderBottom: `1px solid ${C.borderMid}`,
+      }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fc625d" }} />
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fdbc40" }} />
+          <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#34c84a" }} />
+        </div>
+        <div style={{
+          flex: 1, marginLeft: 8,
+          fontSize: 11, color: C.muted,
+          padding: "4px 10px", borderRadius: 6,
+          background: C.surface, border: `1px solid ${C.border}`,
+        }}>
+          🔍&nbsp; google.com/search?q={(clientName || "").toLowerCase().split(" ")[0] || "audaza"}
+        </div>
+        <span style={{
+          fontSize: 9.5, fontWeight: 600, color: C.muted,
+          letterSpacing: "0.1em", textTransform: "uppercase",
+        }}>
+          Pré-visualização
+        </span>
+      </div>
+
+      {/* Sponsored row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <span style={{
+          fontSize: 13, fontWeight: 700, color: C.text,
+        }}>
+          Patrocinado
+        </span>
+        <span style={{ width: 3, height: 3, borderRadius: "50%", background: C.muted }} />
+        <div style={{
+          width: 22, height: 22, borderRadius: "50%",
+          background: C.surface2, border: `1px solid ${C.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11, fontWeight: 700, color: C.subtext,
+        }}>
+          {initial}
+        </div>
+        <div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.text, margin: 0, lineHeight: 1.2 }}>
+            {clientName.length > 28 ? clientName.substring(0, 28) + "…" : clientName}
+          </p>
+          <p style={{ fontSize: 11, color: C.subtext, margin: "1px 0 0", lineHeight: 1 }}>
+            {host}
+          </p>
+        </div>
+      </div>
+
+      {/* Headline (azul Google) */}
+      <h4 style={{
+        fontSize: 19,
+        color: "#1a0dab",
+        fontWeight: 400,
+        letterSpacing: "-0.005em",
+        margin: "8px 0 4px",
+        lineHeight: 1.3,
+      }}>
+        {headline.length > 110 ? headline.substring(0, 108) + "…" : headline}
+      </h4>
+
+      {/* Descrição */}
+      <p style={{
+        fontSize: 13.5, color: C.subtext,
+        lineHeight: 1.55, margin: 0,
+      }}>
+        {desc.length > 200 ? desc.substring(0, 197) + "…" : desc}
+      </p>
+    </div>
+  );
+}
+
+/** Cartão patrocinado do Google Maps / Meu Negócio */
+function LocalAdPreview({
+  clientName, product, finalUrl, location,
+}: { clientName: string; product: string; finalUrl?: string; location?: string }) {
+  const host = extractDomain(finalUrl);
+  const initial = (clientName || "?")[0].toUpperCase();
+
+  return (
+    <div className="card" style={{
+      padding: 22, marginBottom: 12,
+    }}>
+      {/* Maps bar */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        paddingBottom: 12, marginBottom: 16,
+        borderBottom: `1px solid ${C.borderMid}`,
+      }}>
+        <span style={{ fontSize: 14 }}>📍</span>
+        <div style={{
+          flex: 1,
+          fontSize: 11, color: C.muted,
+          padding: "4px 10px", borderRadius: 6,
+          background: C.surface, border: `1px solid ${C.border}`,
+        }}>
+          google.com/maps · próximo a você
+        </div>
+        <span style={{
+          fontSize: 9.5, fontWeight: 600, color: C.muted,
+          letterSpacing: "0.1em", textTransform: "uppercase",
+        }}>
+          Pré-visualização local
+        </span>
+      </div>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        {/* Thumb */}
+        <div style={{
+          width: 96, height: 96, borderRadius: 10, flexShrink: 0,
+          background: `linear-gradient(135deg, ${C.brand}22, ${C.brand}05)`,
+          border: `1px solid ${C.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 38, fontWeight: 700, color: C.brand,
+          fontFamily: "var(--font-display)",
+        }}>
+          {initial}
+        </div>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <h4 className="font-display" style={{
+              fontSize: 16, fontWeight: 500, color: C.text,
+              margin: 0, letterSpacing: "-0.022em", lineHeight: 1.25,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              flex: 1,
+            }}>
+              {clientName}
+            </h4>
+            <span style={{
+              fontSize: 9.5, fontWeight: 700, color: "#92400e",
+              background: "#fef3c7", border: "1px solid #fbbf24",
+              padding: "2px 7px", borderRadius: 4,
+              letterSpacing: "0.05em", flexShrink: 0,
+            }}>
+              PATROCINADO
+            </span>
+          </div>
+
+          {/* Estrelas + categoria */}
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6 }}>
+            <span style={{
+              fontSize: 12, fontWeight: 700, color: "#f59e0b",
+            }}>
+              4,8
+            </span>
+            <div style={{ display: "flex", gap: 1 }}>
+              {[0,1,2,3,4].map(i => (
+                <svg key={i} width={11} height={11} viewBox="0 0 10 10">
+                  <path d="M5 0.5L6.4 3.3L9.5 3.7L7.2 5.9L7.7 9L5 7.5L2.3 9L2.8 5.9L0.5 3.7L3.6 3.3z" fill="#f59e0b" />
+                </svg>
+              ))}
+            </div>
+            <span style={{ fontSize: 11.5, color: C.muted }}>(142 avaliações)</span>
+          </div>
+
+          <p style={{
+            fontSize: 13, color: C.subtext, margin: "6px 0 0", lineHeight: 1.5,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {product}
+          </p>
+
+          {location && (
+            <p style={{
+              fontSize: 12, color: C.muted, margin: "3px 0 0",
+              display: "flex", alignItems: "center", gap: 4,
+            }}>
+              <span>📍</span>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {location}
+              </span>
+            </p>
+          )}
+
+          {/* Botões mock */}
+          <div style={{ display: "flex", gap: 6, marginTop: 12 }}>
+            {host && (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "5px 11px", borderRadius: 6,
+                background: C.brand, color: "white",
+                fontSize: 11.5, fontWeight: 600,
+              }}>
+                Site
+              </span>
+            )}
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "5px 11px", borderRadius: 6,
+              background: C.surface, border: `1px solid ${C.border}`,
+              color: C.subtext, fontSize: 11.5, fontWeight: 600,
+            }}>
+              Como chegar
+            </span>
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "5px 11px", borderRadius: 6,
+              background: C.surface, border: `1px solid ${C.border}`,
+              color: C.subtext, fontSize: 11.5, fontWeight: 600,
+            }}>
+              Ligar
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1069,6 +1306,59 @@ export default function ResultadoPage() {
               })}
             </div>
           </section>
+
+          {/* ═════ PRÉ-VISUALIZAÇÃO DO ANÚNCIO ═════ */}
+          {(() => {
+            const pesquisaCampaigns = plan.campaigns.filter(
+              c => c.platform === "Google Ads" && c.googleCampaignType === "Pesquisa"
+            );
+            if (pesquisaCampaigns.length === 0) return null;
+            const firstAd = pesquisaCampaigns[0]?.adSets[0]?.ads[0];
+            if (!firstAd?.copy) return null;
+
+            return (
+              <section className="rise d-3" style={{ marginBottom: 32 }}>
+                <SectionTitle
+                  eyebrow="Como vai aparecer"
+                  title="Pré-visualização do Anúncio"
+                  subtitle="Simulação de como o anúncio aparece no Google. As combinações exatas de títulos e descrições são montadas dinamicamente pelo algoritmo."
+                />
+
+                {/* Search Ad */}
+                <div style={{ marginBottom: 18 }}>
+                  <p style={{
+                    fontSize: 10, fontWeight: 600, color: C.muted,
+                    letterSpacing: "0.16em", textTransform: "uppercase",
+                    margin: "0 0 10px",
+                  }}>
+                    Mecanismo de Pesquisa · google.com
+                  </p>
+                  <SearchAdPreview
+                    copy={firstAd.copy}
+                    finalUrl={plan.googleAdsConfig?.finalUrl}
+                    clientName={plan.overview.clientName}
+                  />
+                </div>
+
+                {/* Local Ad / GMB */}
+                <div>
+                  <p style={{
+                    fontSize: 10, fontWeight: 600, color: C.muted,
+                    letterSpacing: "0.16em", textTransform: "uppercase",
+                    margin: "0 0 10px",
+                  }}>
+                    Google Meu Negócio · Anúncio Local
+                  </p>
+                  <LocalAdPreview
+                    clientName={plan.overview.clientName}
+                    product={plan.overview.product}
+                    finalUrl={plan.googleAdsConfig?.finalUrl}
+                    location={plan.overview.location}
+                  />
+                </div>
+              </section>
+            );
+          })()}
 
           {/* ═════ CRONOGRAMA ═════ */}
           {plan.timeline && plan.timeline.length > 0 && (
