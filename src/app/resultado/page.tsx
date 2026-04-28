@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { CampaignPlan } from "@/types/campaign";
-import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, DollarSign, Target, Layers, FileText, Calendar, MapPin, Activity } from "lucide-react";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import CampaignPDF from "@/components/CampaignPDF";
+import { ArrowLeft, Download, Check, Save, RotateCw, AlertCircle, DollarSign, Target, Layers, FileText, Calendar, MapPin, Activity, FileImage, ChevronDown } from "lucide-react";
 import { PlatformLogo } from "@/components/PlatformLogo";
 import { savePlan } from "@/lib/savedPlans";
 import { getHierarchyLabels } from "@/lib/hierarchy";
@@ -597,6 +595,11 @@ export default function ResultadoPage() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
+  /* Export */
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exporting, setExporting] = useState<"" | "png" | "pdf">("");
+
   useEffect(() => {
     setClient(true);
     const raw = sessionStorage.getItem("campaignPlan");
@@ -620,6 +623,83 @@ export default function ResultadoPage() {
       setTimeout(() => setSaveState("idle"), 2500);
     }
   }
+
+  /* Captura o conteúdo da página como imagem (DOM real, pixel-perfect) */
+  async function captureCanvas(): Promise<HTMLCanvasElement | null> {
+    if (!exportRef.current) return null;
+    const { toCanvas } = await import("html-to-image");
+    const bg = getComputedStyle(document.documentElement)
+      .getPropertyValue("--bg").trim() || "#ffffff";
+    return toCanvas(exportRef.current, {
+      pixelRatio: 2,
+      cacheBust: true,
+      backgroundColor: bg,
+      style: { transform: "none" },
+    });
+  }
+
+  async function exportPNG() {
+    if (!plan) return;
+    setExporting("png"); setExportMenuOpen(false);
+    try {
+      const canvas = await captureCanvas();
+      if (!canvas) return;
+      const link = document.createElement("a");
+      const slug = plan.overview.clientName.toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campanha";
+      link.download = `campanha-${slug}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PNG. Tente novamente.");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  async function exportPDF() {
+    if (!plan) return;
+    setExporting("pdf"); setExportMenuOpen(false);
+    try {
+      const canvas = await captureCanvas();
+      if (!canvas) return;
+      const { jsPDF } = await import("jspdf");
+      const imgData = canvas.toDataURL("image/png");
+      /* Página com largura A4 + altura proporcional */
+      const A4_W = 595.28; // pt
+      const ratio = canvas.height / canvas.width;
+      const pageH = A4_W * ratio;
+      const pdf = new jsPDF({
+        orientation: pageH > A4_W ? "p" : "l",
+        unit: "pt",
+        format: [A4_W, pageH],
+        compress: true,
+      });
+      pdf.addImage(imgData, "PNG", 0, 0, A4_W, pageH);
+      const slug = plan.overview.clientName.toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campanha";
+      pdf.save(`campanha-${slug}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível gerar o PDF. Tente novamente.");
+    } finally {
+      setExporting("");
+    }
+  }
+
+  /* Fecha o menu ao clicar fora */
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    function close(e: MouseEvent) {
+      const t = e.target as HTMLElement;
+      if (!t.closest(".export-wrap")) setExportMenuOpen(false);
+    }
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [exportMenuOpen]);
 
   if (!plan) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -903,6 +983,23 @@ export default function ResultadoPage() {
           .stat-cell { padding: 14px 10px; }
           .dash-table__head, .dash-table__row { font-size: 11px; padding: 10px 14px; gap: 8px; }
         }
+
+        /* Export menu */
+        @keyframes menuIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .export-menu-item {
+          display: flex; align-items: center; gap: 10px;
+          width: 100%; padding: 9px 11px;
+          background: transparent; border: none;
+          border-radius: 7px;
+          color: ${C.text}; font-family: inherit;
+          cursor: pointer; transition: background 0.15s;
+          text-align: left;
+        }
+        .export-menu-item:hover { background: ${C.surface2}; }
+        .export-menu-item svg { color: ${C.brand}; flex-shrink: 0; }
       `}</style>
 
       <div className="res-root" style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
@@ -942,24 +1039,76 @@ export default function ResultadoPage() {
                   {saveBtnConfig.label}
                 </button>
 
-                <PDFDownloadLink
-                  document={<CampaignPDF plan={plan} />}
-                  fileName={`campanha-${plan.overview.clientName.toLowerCase().replace(/\s+/g, "-")}.pdf`}
-                >
-                  {({ loading: l }) => (
-                    <button disabled={l} className="export-btn">
+                {/* Dropdown Exportar PDF / PNG */}
+                <div className="export-wrap" style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={() => setExportMenuOpen(o => !o)}
+                    disabled={!!exporting}
+                    className="export-btn"
+                    aria-haspopup="menu"
+                    aria-expanded={exportMenuOpen}
+                  >
+                    {exporting ? (
+                      <RotateCw size={13} style={{ animation: "spin 0.8s linear infinite" }} />
+                    ) : (
                       <Download size={13} />
-                      {l ? "Gerando…" : "Exportar PDF"}
-                    </button>
+                    )}
+                    {exporting === "png" ? "Gerando PNG…"
+                     : exporting === "pdf" ? "Gerando PDF…"
+                     : "Exportar"}
+                    <ChevronDown size={13} style={{
+                      transition: "transform 0.18s",
+                      transform: exportMenuOpen ? "rotate(180deg)" : "rotate(0)",
+                      opacity: 0.85,
+                    }} />
+                  </button>
+                  {exportMenuOpen && !exporting && (
+                    <div role="menu" style={{
+                      position: "absolute", top: "calc(100% + 6px)", right: 0,
+                      minWidth: 200,
+                      background: "var(--surface-solid)",
+                      border: `1px solid ${C.border}`,
+                      borderRadius: 11,
+                      boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+                      padding: 6,
+                      zIndex: 60,
+                      animation: "menuIn 0.18s ease",
+                    }}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={exportPDF}
+                        className="export-menu-item"
+                      >
+                        <FileText size={14} />
+                        <div style={{ flex: 1, textAlign: "left" }}>
+                          <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>Exportar PDF</div>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>Documento .pdf</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={exportPNG}
+                        className="export-menu-item"
+                      >
+                        <FileImage size={14} />
+                        <div style={{ flex: 1, textAlign: "left" }}>
+                          <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>Exportar PNG</div>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>Imagem .png em alta resolução</div>
+                        </div>
+                      </button>
+                    </div>
                   )}
-                </PDFDownloadLink>
+                </div>
               </>
             )}
             <ThemeToggle />
           </div>
         </header>
 
-        <main style={{ maxWidth: 960, margin: "0 auto", padding: "36px 20px 120px" }}>
+        <main ref={exportRef} style={{ maxWidth: 960, margin: "0 auto", padding: "36px 20px 120px", background: C.bg }}>
 
           {/* ═════ IDENTITY STRIP ═════ */}
           <section className="rise d-0" style={{ marginBottom: 22 }}>
