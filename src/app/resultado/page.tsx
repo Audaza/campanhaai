@@ -624,18 +624,66 @@ export default function ResultadoPage() {
     }
   }
 
-  /* Captura o conteúdo da página como imagem (DOM real, pixel-perfect) */
+  /* Slug pra nome do arquivo */
+  function fileSlug(): string {
+    if (!plan) return "campanha";
+    return plan.overview.clientName.toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campanha";
+  }
+
+  /* Captura o DOM real da página como canvas, pixel-perfect.
+     Força largura desktop fixa (1024px) durante a captura para não
+     ficar dependente do viewport do usuário (mobile cortaria). */
   async function captureCanvas(): Promise<HTMLCanvasElement | null> {
     if (!exportRef.current) return null;
-    const { toCanvas } = await import("html-to-image");
-    const bg = getComputedStyle(document.documentElement)
-      .getPropertyValue("--bg").trim() || "#ffffff";
-    return toCanvas(exportRef.current, {
-      pixelRatio: 2,
-      cacheBust: true,
-      backgroundColor: bg,
-      style: { transform: "none" },
-    });
+    const el = exportRef.current;
+
+    /* Salva estilos originais */
+    const original = {
+      width: el.style.width,
+      minWidth: el.style.minWidth,
+      maxWidth: el.style.maxWidth,
+    };
+
+    /* Força largura desktop estável durante o capture */
+    const CAPTURE_WIDTH = 1024;
+    el.style.width    = `${CAPTURE_WIDTH}px`;
+    el.style.minWidth = `${CAPTURE_WIDTH}px`;
+    el.style.maxWidth = `${CAPTURE_WIDTH}px`;
+
+    try {
+      /* Aguarda fontes carregarem + frame de layout */
+      if (typeof document !== "undefined" && "fonts" in document) {
+        await document.fonts.ready;
+      }
+      await new Promise(r => setTimeout(r, 80));
+
+      const { toCanvas } = await import("html-to-image");
+      const bg = getComputedStyle(document.documentElement)
+        .getPropertyValue("--bg").trim() || "#ffffff";
+
+      /* Usa scrollHeight pra pegar o conteúdo completo, scrollWidth pra
+         garantir que nada seja cortado horizontalmente */
+      const fullW = Math.max(el.scrollWidth, CAPTURE_WIDTH);
+      const fullH = el.scrollHeight;
+
+      return toCanvas(el, {
+        pixelRatio: 2,
+        cacheBust: true,
+        backgroundColor: bg,
+        width:  fullW,
+        height: fullH,
+        canvasWidth:  fullW * 2,
+        canvasHeight: fullH * 2,
+        style: { transform: "none" },
+      });
+    } finally {
+      /* Restaura estilos */
+      el.style.width    = original.width;
+      el.style.minWidth = original.minWidth;
+      el.style.maxWidth = original.maxWidth;
+    }
   }
 
   async function exportPNG() {
@@ -645,10 +693,7 @@ export default function ResultadoPage() {
       const canvas = await captureCanvas();
       if (!canvas) return;
       const link = document.createElement("a");
-      const slug = plan.overview.clientName.toLowerCase()
-        .normalize("NFD").replace(/[̀-ͯ]/g, "")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campanha";
-      link.download = `campanha-${slug}.png`;
+      link.download = `campanha-${fileSlug()}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (err) {
@@ -667,21 +712,21 @@ export default function ResultadoPage() {
       if (!canvas) return;
       const { jsPDF } = await import("jspdf");
       const imgData = canvas.toDataURL("image/png");
-      /* Página com largura A4 + altura proporcional */
-      const A4_W = 595.28; // pt
-      const ratio = canvas.height / canvas.width;
-      const pageH = A4_W * ratio;
+
+      /* Página do PDF = dimensões reais do canvas (em pixels CSS).
+         Dividimos por pixelRatio (2) pra voltar pra escala 1x. */
+      const pageW = canvas.width  / 2;
+      const pageH = canvas.height / 2;
+
       const pdf = new jsPDF({
-        orientation: pageH > A4_W ? "p" : "l",
-        unit: "pt",
-        format: [A4_W, pageH],
+        orientation: pageH > pageW ? "p" : "l",
+        unit: "px",
+        format: [pageW, pageH],
         compress: true,
+        hotfixes: ["px_scaling"],
       });
-      pdf.addImage(imgData, "PNG", 0, 0, A4_W, pageH);
-      const slug = plan.overview.clientName.toLowerCase()
-        .normalize("NFD").replace(/[̀-ͯ]/g, "")
-        .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campanha";
-      pdf.save(`campanha-${slug}.pdf`);
+      pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+      pdf.save(`campanha-${fileSlug()}.pdf`);
     } catch (err) {
       console.error(err);
       alert("Não foi possível gerar o PDF. Tente novamente.");
